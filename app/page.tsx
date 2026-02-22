@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Grid2X2, ArrowLeftRight, Mic, Copy } from "lucide-react";
+import Select from "@/components/Select";
 
 const DIALECTS = [
   "Spanish (Spain)",
@@ -10,6 +11,8 @@ const DIALECTS = [
   "Colombian Spanish",
   "Jamaican Patois",
 ];
+
+const LANGUAGES = ["English", "Spanish", "French", "German", "Portuguese"];
 
 export default function TranslatorPage() {
   const [text, setText] = useState("");
@@ -22,12 +25,40 @@ export default function TranslatorPage() {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function swapLanguages() {
+  const languageOptions = useMemo(
+    () => LANGUAGES.map((l) => ({ value: l, label: l })),
+    [],
+  );
+
+  const dialectOptions = useMemo(
+    () => DIALECTS.map((d) => ({ value: d, label: d })),
+    [],
+  );
+
+  const toneOptions = useMemo(
+    () => [
+      { value: "formal", label: "Formal" },
+      { value: "informal", label: "Informal" },
+    ],
+    [],
+  );
+
+  const pluralityOptions = useMemo(
+    () => [
+      { value: "singular", label: "Singular" },
+      { value: "plural", label: "Plural" },
+    ],
+    [],
+  );
+
+  function swapLanguages(e?: React.MouseEvent) {
+    e?.preventDefault();
     setFrom(to);
     setTo(from);
   }
 
-  async function handleTranslate() {
+  async function handleTranslate(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
     setLoading(true);
     setError(null);
     setResult(null);
@@ -52,7 +83,7 @@ export default function TranslatorPage() {
 
       const data = await res.json();
       setResult(data.translation);
-    } catch (err) {
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -60,12 +91,13 @@ export default function TranslatorPage() {
   }
 
   return (
-    <main className="bg-primary ">
+    <main className="bg-(--background)">
       <header className="text-center p-6 mb-4 shadow-sm w-full">
         <div className="flex items-center justify-between">
           <button
             className="h-12 w-12 rounded-full border border-black/10 bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)] flex items-center justify-center"
             aria-label="Back"
+            type="button"
           >
             <ArrowLeft className="h-5 w-5 text-black/80" />
           </button>
@@ -77,34 +109,45 @@ export default function TranslatorPage() {
           <button
             className="h-12 w-12 rounded-full border border-black/10 bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)] flex items-center justify-center"
             aria-label="Menu"
+            type="button"
           >
             <Grid2X2 className="h-5 w-5 text-black/80" />
           </button>
         </div>
       </header>
 
-      <form className="flex flex-col gap-4 w-11/12 mx-auto">
-        <div className="mt-6 flex flex-col justify-between gap-3">
-          <input
-            className="rounded-[22px] border border-black/10 bg-white p-5"
-            placeholder="From"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-          />
+      <form className="flex flex-col gap-4 w-11/12 mx-auto max-w-3xl">
+        <div className="mt-6 flex items-center gap-3">
+          <div className="flex-1 min-w-35 sm:min-w-45">
+            <Select
+              id="from"
+              label="From"
+              value={from}
+              onChange={setFrom}
+              options={languageOptions}
+              placeholder="From"
+            />
+          </div>
 
           <button
-            className="h-12 w-12 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center"
+            className="h-12 w-12 shrink-0 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center"
             aria-label="Swap"
             onClick={swapLanguages}
+            type="button"
           >
             <ArrowLeftRight className="h-5 w-5" />
           </button>
-          <input
-            className="rounded-[22px] border border-black/10 bg-white p-5"
-            placeholder="To"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-          />
+
+          <div className="flex-1 min-w-35 sm:min-w-45">
+            <Select
+              id="to"
+              label="To"
+              value={to}
+              onChange={setTo}
+              options={languageOptions}
+              placeholder="To"
+            />
+          </div>
         </div>
 
         <div className="mt-6 rounded-[22px] border border-black/10 bg-white">
@@ -125,13 +168,15 @@ export default function TranslatorPage() {
               <div className="flex items-center gap-3 text-black/70">
                 <button
                   className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
-                  aria-label="Speak"
+                  aria-label="Copy"
+                  type="button"
                 >
                   <Copy className="h-5 w-5" />
                 </button>
                 <button
                   className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
                   aria-label="Mic"
+                  type="button"
                 >
                   <Mic className="h-5 w-5" />
                 </button>
@@ -144,7 +189,6 @@ export default function TranslatorPage() {
           <textarea
             className="w-full h-32 mt-6 rounded-sm bg-white p-5"
             value={result ?? ""}
-            onChange={(e) => setText(e.target.value)}
             disabled
           />
           <div className="p-5">
@@ -158,13 +202,15 @@ export default function TranslatorPage() {
               <div className="flex items-center gap-3 text-black/70">
                 <button
                   className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
-                  aria-label="Speak"
+                  aria-label="Copy"
+                  type="button"
                 >
                   <Copy className="h-5 w-5" />
                 </button>
                 <button
                   className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
                   aria-label="Mic"
+                  type="button"
                 >
                   <Mic className="h-5 w-5" />
                 </button>
@@ -172,52 +218,46 @@ export default function TranslatorPage() {
             </div>
           </div>
         </div>
+
         {error && <p className="text-sm text-red-400">{error}</p>}
 
-
-        <div className="">
-          <select
-            className="rounded-lg border border-slate-700 p-2"
+        <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Select
+            id="dialect"
+            label="Dialect"
             value={dialect}
-            onChange={(e) => setDialect(e.target.value)}
-          >
-            <option value="">Dialect (optional)</option>
-            {DIALECTS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
+            onChange={setDialect}
+            options={dialectOptions}
+            placeholder="Optional"
+          />
 
-          <select
-            className="rounded-lg border border-slate-700 p-2"
+          <Select
+            id="tone"
+            label="Tone"
             value={tone}
-            onChange={(e) => setTone(e.target.value as any)}
-          >
-            <option value="">Tone (optional)</option>
-            <option value="formal">Formal</option>
-            <option value="informal">Informal</option>
-          </select>
+            onChange={(v) => setTone(v as any)}
+            options={toneOptions}
+            placeholder="Optional"
+          />
 
-          <select
-            className="rounded-lg border border-slate-700 p-2"
+          <Select
+            id="plurality"
+            label="Plurality"
             value={plurality}
-            onChange={(e) => setPlurality(e.target.value as any)}
-          >
-            <option value="">Plurality (optional)</option>
-            <option value="singular">Singular</option>
-            <option value="plural">Plural</option>
-          </select>
+            onChange={(v) => setPlurality(v as any)}
+            options={pluralityOptions}
+            placeholder="Optional"
+          />
         </div>
 
         <button
           onClick={handleTranslate}
           disabled={!text || loading}
-          className="w-full rounded-lg bg-secondary text-white py-3 font-medium hover:bg-accent disabled:opacity-50"
+          className="rounded-lg bg-(--foreground) text-white py-3 font-medium hover:bg-(--accent) disabled:opacity-50"
+          type="button"
         >
           {loading ? "Translating..." : "Translate"}
         </button>
-
       </form>
     </main>
   );

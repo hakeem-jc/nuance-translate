@@ -7,18 +7,6 @@
   --text: black;
 }
 
-.bg-primary {
-  @apply bg-[var(--background)];
-}
-
-.bg-secondary {
-  @apply bg-[var(--foreground)];
-}
-
-.bg-accent {
-  @apply bg-[var(--accent)];
-}
-
 body {
   background: var(--background);
   color: var(--text);
