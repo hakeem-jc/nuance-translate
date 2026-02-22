@@ -117,7 +117,7 @@ export default function TranslatorPage() {
 
   return (
     <main className="bg-(--background)">
-      <header className="text-center p-6 mb-4 shadow-sm w-full">
+      <header className="text-center p-4 mb-2 shadow-sm w-full">
         <div className="flex items-center justify-between">
           <h1 className="text-[22px] font-semibold tracking-tight text-black/90">
             Nuance Translate
@@ -180,7 +180,7 @@ export default function TranslatorPage() {
       </header>
 
       <form className="flex flex-col gap-4 w-11/12 mx-auto max-w-6xl">
-        <div className="mt-6 flex items-center gap-3">
+        <div className="mt-6 flex items-center justify-center gap-3">
           <div className="flex-1 min-w-35 sm:min-w-45">
             <Select
               id="from"
@@ -193,7 +193,7 @@ export default function TranslatorPage() {
           </div>
 
           <button
-            className="h-12 w-12 shrink-0 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center"
+            className="h-10 w-10 shrink-0 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center"
             aria-label="Swap"
             onClick={swapLanguages}
             type="button"
@@ -286,16 +286,19 @@ export default function TranslatorPage() {
           </div>
         </section>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        <div className="text-center">
+          <button
+            onClick={handleTranslate}
+            disabled={!text || loading}
+            className="w-64 cursor-pointer text-center rounded-[22px] bg-(--foreground) text-white py-3 font-medium hover:bg-(--accent) disabled:opacity-50"
+            type="button"
+          >
+            {loading ? "Translating..." : "Translate"}
+          </button>
 
-        <button
-          onClick={handleTranslate}
-          disabled={!text || loading}
-          className="rounded-lg bg-(--foreground) text-white py-3 font-medium hover:bg-(--accent) disabled:opacity-50"
-          type="button"
-        >
-          {loading ? "Translating..." : "Translate"}
-        </button>
+          {/* TODO - Replace this with a toast message */}
+          {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
+        </div>
       </form>
     </main>
   );
