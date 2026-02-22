@@ -1,6 +1,6 @@
 "use client";
-import { useMemo, useState } from "react";
-import { Grid2X2, ArrowLeftRight, Mic, Copy } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Settings, ArrowLeftRight, Mic, Copy } from "lucide-react";
 import Select from "@/components/Select";
 
 const DIALECTS = [
@@ -24,6 +24,9 @@ export default function TranslatorPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsWrapRef = useRef<HTMLDivElement | null>(null);
 
   const languageOptions = useMemo(
     () => LANGUAGES.map((l) => ({ value: l, label: l })),
@@ -90,6 +93,28 @@ export default function TranslatorPage() {
     }
   }
 
+  // Close dropdown on outside click or Escape
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      if (!settingsOpen) return;
+      const el = settingsWrapRef.current;
+      if (!el) return;
+      if (!el.contains(e.target as Node)) setSettingsOpen(false);
+    }
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (!settingsOpen) return;
+      if (e.key === "Escape") setSettingsOpen(false);
+    }
+
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [settingsOpen]);
+
   return (
     <main className="bg-(--background)">
       <header className="text-center p-6 mb-4 shadow-sm w-full">
@@ -98,13 +123,59 @@ export default function TranslatorPage() {
             Nuance Translate
           </h1>
 
-          <button
-            className="h-12 w-12 rounded-full border border-black/10 bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)] flex items-center justify-center"
-            aria-label="Menu"
-            type="button"
-          >
-            <Grid2X2 className="h-5 w-5 text-black/80" />
-          </button>
+          {/* Settings */}
+          <div className="relative" ref={settingsWrapRef}>
+            <button
+              className="h-12 w-12 rounded-full border border-black/10 bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)] flex items-center justify-center cursor-pointer"
+              aria-label="Settings"
+              type="button"
+              onClick={() => setSettingsOpen((v) => !v)}
+            >
+              <Settings className="h-5 w-5 text-black/70 hover:text-black/95 transition-colors" />
+            </button>
+
+            {settingsOpen && (
+              <div
+                className="
+                  absolute right-0 mt-3 w-70
+                  rounded-[18px] border border-black/10 bg-white
+                  shadow-[0_18px_50px_rgba(0,0,0,0.14)]
+                  p-4 z-50
+                "
+                role="menu"
+                aria-label="Translation settings"
+              >
+                <div className="space-y-3">
+                  <Select
+                    id="dialect"
+                    label="Dialect"
+                    value={dialect}
+                    onChange={setDialect}
+                    options={dialectOptions}
+                    placeholder="Optional"
+                  />
+
+                  <Select
+                    id="tone"
+                    label="Tone"
+                    value={tone}
+                    onChange={(v) => setTone(v as any)}
+                    options={toneOptions}
+                    placeholder="Optional"
+                  />
+
+                  <Select
+                    id="plurality"
+                    label="Plurality"
+                    value={plurality}
+                    onChange={(v) => setPlurality(v as any)}
+                    options={pluralityOptions}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -212,35 +283,6 @@ export default function TranslatorPage() {
         </div>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
-
-        <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Select
-            id="dialect"
-            label="Dialect"
-            value={dialect}
-            onChange={setDialect}
-            options={dialectOptions}
-            placeholder="Optional"
-          />
-
-          <Select
-            id="tone"
-            label="Tone"
-            value={tone}
-            onChange={(v) => setTone(v as any)}
-            options={toneOptions}
-            placeholder="Optional"
-          />
-
-          <Select
-            id="plurality"
-            label="Plurality"
-            value={plurality}
-            onChange={(v) => setPlurality(v as any)}
-            options={pluralityOptions}
-            placeholder="Optional"
-          />
-        </div>
 
         <button
           onClick={handleTranslate}
