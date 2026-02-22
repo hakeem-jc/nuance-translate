@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
       temperature: 0.3,
     });
 
-    const translation = response.choices[0]?.message?.content;
+    let content = response.choices[0]?.message?.content ?? "";
+    const translation = content.replace(/['"]/g, "");
 
     return NextResponse.json({
       translation,
