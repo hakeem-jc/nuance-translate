@@ -180,7 +180,8 @@ export default function TranslatorPage() {
       </header>
 
       <form className="flex flex-col gap-4 w-11/12 mx-auto max-w-6xl">
-        <div className="mt-6 flex items-center justify-center gap-3">
+        {/* Language Row */}
+        <div className="mt-6 flex items-end gap-3">
           <div className="flex-1 min-w-35 sm:min-w-45">
             <Select
               id="from"
@@ -193,7 +194,7 @@ export default function TranslatorPage() {
           </div>
 
           <button
-            className="h-10 w-10 shrink-0 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center"
+            className="h-10 w-10 shrink-0 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center mb-1.5"
             aria-label="Swap"
             onClick={swapLanguages}
             type="button"
@@ -213,6 +214,7 @@ export default function TranslatorPage() {
           </div>
         </div>
 
+        {/* Translation Fields */}
         <section className="mt-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Input */}
           <div className="rounded-sm border border-black/10 bg-white">
