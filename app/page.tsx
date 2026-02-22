@@ -179,7 +179,7 @@ export default function TranslatorPage() {
         </div>
       </header>
 
-      <form className="flex flex-col gap-4 w-11/12 mx-auto max-w-3xl">
+      <form className="flex flex-col gap-4 w-11/12 mx-auto max-w-6xl">
         <div className="mt-6 flex items-center gap-3">
           <div className="flex-1 min-w-35 sm:min-w-45">
             <Select
@@ -213,74 +213,78 @@ export default function TranslatorPage() {
           </div>
         </div>
 
-        <div className="mt-6 rounded-[22px] border border-black/10 bg-white">
-          <textarea
-            className="w-full h-32 mt-6 rounded-sm bg-white p-5 focus:outline-none"
-            placeholder="Enter text to translate"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
+        <section className="mt-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Input */}
+          <div className="rounded-sm border border-black/10 bg-white">
+            <textarea
+              className="w-full h-48 mt-6 rounded-sm bg-white p-5 focus:outline-none"
+              placeholder="Enter text to translate"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
 
-          <div className="p-5">
-            <div className="mt-6 h-px w-full bg-black/10" />
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-[12px] font-semibold text-black/85">
-                150 <span className="font-normal text-black/45">/ 5.000</span>
-              </span>
+            <div className="p-5">
+              <div className="mt-6 h-px w-full bg-black/10" />
+              <div className="mt-3 flex items-center justify-between">
+                <span className="text-[12px] font-semibold text-black/85">
+                  150 <span className="font-normal text-black/45">/ 5.000</span>
+                </span>
 
-              <div className="flex items-center gap-3 text-black/70">
-                <button
-                  className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
-                  aria-label="Copy"
-                  type="button"
-                >
-                  <Copy className="h-5 w-5" />
-                </button>
-                <button
-                  className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
-                  aria-label="Mic"
-                  type="button"
-                >
-                  <Mic className="h-5 w-5" />
-                </button>
+                <div className="flex items-center gap-3 text-black/70">
+                  <button
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                    aria-label="Copy"
+                    type="button"
+                  >
+                    <Copy className="h-5 w-5" />
+                  </button>
+                  <button
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                    aria-label="Mic"
+                    type="button"
+                  >
+                    <Mic className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-6 rounded-[22px] border border-black/10 bg-white">
-          <textarea
-            className="w-full h-32 mt-6 rounded-sm bg-white p-5"
-            value={result ?? ""}
-            disabled
-          />
-          <div className="p-5">
-            <div className="mt-6 h-px w-full bg-black/10" />
+          {/* Output */}
+          <div className="rounded-sm border border-black/10 bg-white">
+            <textarea
+              className="w-full h-48 mt-6 rounded-sm bg-white p-5"
+              value={result ?? ""}
+              disabled
+            />
 
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-[12px] font-semibold text-black/85">
-                150 <span className="font-normal text-black/45">/ 5.000</span>
-              </span>
+            <div className="p-5">
+              <div className="mt-6 h-px w-full bg-black/10" />
+              <div className="mt-3 flex items-center justify-between">
+                <span className="text-[12px] font-semibold text-black/85">
+                  150 <span className="font-normal text-black/45">/ 5.000</span>
+                </span>
 
-              <div className="flex items-center gap-3 text-black/70">
-                <button
-                  className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
-                  aria-label="Copy"
-                  type="button"
-                >
-                  <Copy className="h-5 w-5" />
-                </button>
-                <button
-                  className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
-                  aria-label="Mic"
-                  type="button"
-                >
-                  <Mic className="h-5 w-5" />
-                </button>
+                <div className="flex items-center gap-3 text-black/70">
+                  <button
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                    aria-label="Copy"
+                    type="button"
+                  >
+                    <Copy className="h-5 w-5" />
+                  </button>
+                  <button
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                    aria-label="Mic"
+                    type="button"
+                  >
+                    <Mic className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
 

@@ -43,7 +43,7 @@ const Select: React.FC<SelectProps> = ({
           onChange={(e) => onChange(e.target.value)}
           className={`
             w-full h-12 px-5 text-base
-            border rounded-none
+            border border-black/10 rounded-none
             text-color
             font-normal antialiased
             focus:outline-none focus:border-blue-600
