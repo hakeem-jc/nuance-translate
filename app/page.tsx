@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Grid2X2, ArrowLeftRight, Mic, Copy } from "lucide-react";
+import { Grid2X2, ArrowLeftRight, Mic, Copy } from "lucide-react";
 import Select from "@/components/Select";
 
 const DIALECTS = [
@@ -94,14 +94,6 @@ export default function TranslatorPage() {
     <main className="bg-(--background)">
       <header className="text-center p-6 mb-4 shadow-sm w-full">
         <div className="flex items-center justify-between">
-          <button
-            className="h-12 w-12 rounded-full border border-black/10 bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)] flex items-center justify-center"
-            aria-label="Back"
-            type="button"
-          >
-            <ArrowLeft className="h-5 w-5 text-black/80" />
-          </button>
-
           <h1 className="text-[22px] font-semibold tracking-tight text-black/90">
             Nuance Translate
           </h1>
