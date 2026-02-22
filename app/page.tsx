@@ -1,6 +1,6 @@
 "use client";
-
 import { useState } from "react";
+import { ArrowLeft, Grid2X2, ArrowLeftRight, Mic, Copy } from "lucide-react";
 
 const DIALECTS = [
   "Spanish (Spain)",
@@ -60,49 +60,120 @@ export default function TranslatorPage() {
   }
 
   return (
-    <main className="bg-primary">
+    <main className="bg-primary ">
       <header className="text-center p-6 mb-4 shadow-sm w-full">
-        <h1 className="text-2xl font-semibold">Nuance Translate</h1>
+        <div className="flex items-center justify-between">
+          <button
+            className="h-12 w-12 rounded-full border border-black/10 bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)] flex items-center justify-center"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-5 w-5 text-black/80" />
+          </button>
+
+          <h1 className="text-[22px] font-semibold tracking-tight text-black/90">
+            Nuance Translate
+          </h1>
+
+          <button
+            className="h-12 w-12 rounded-full border border-black/10 bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)] flex items-center justify-center"
+            aria-label="Menu"
+          >
+            <Grid2X2 className="h-5 w-5 text-black/80" />
+          </button>
+        </div>
       </header>
 
       <form className="flex flex-col gap-4 w-11/12 mx-auto">
-        <div className="">
+        <div className="mt-6 flex flex-col justify-between gap-3">
           <input
-            className="rounded-lg border border-slate-700 p-2"
+            className="rounded-[22px] border border-black/10 bg-white p-5"
             placeholder="From"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
           />
 
           <button
+            className="h-12 w-12 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center"
+            aria-label="Swap"
             onClick={swapLanguages}
-            className="rounded-full border border-slate-700 px-3 py-2 hover:"
-            title="Swap languages"
           >
-            ⇄
+            <ArrowLeftRight className="h-5 w-5" />
           </button>
-
           <input
-            className="rounded-lg border border-slate-700 p-2"
+            className="rounded-[22px] border border-black/10 bg-white p-5"
             placeholder="To"
             value={to}
             onChange={(e) => setTo(e.target.value)}
           />
         </div>
 
-        <textarea
-          className="w-full h-32 shadow-md rounded-lg p-3 focus:outline-none focus:shadow-lg"
-          placeholder="Enter text to translate"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
+        <div className="mt-6 rounded-[22px] border border-black/10 bg-white">
+          <textarea
+            className="w-full h-32 mt-6 rounded-sm bg-white p-5 focus:outline-none"
+            placeholder="Enter text to translate"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
 
-        <textarea
-          className="w-full h-32 rounded-lg shadow-lg p-3 focus:outline-none focus:ring-2 focus:ring-slate-500"
-          value={result ?? ""}
-          onChange={(e) => setText(e.target.value)}
-          disabled
-        />
+          <div className="p-5">
+            <div className="mt-6 h-px w-full bg-black/10" />
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-[12px] font-semibold text-black/85">
+                150 <span className="font-normal text-black/45">/ 5.000</span>
+              </span>
+
+              <div className="flex items-center gap-3 text-black/70">
+                <button
+                  className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                  aria-label="Speak"
+                >
+                  <Copy className="h-5 w-5" />
+                </button>
+                <button
+                  className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                  aria-label="Mic"
+                >
+                  <Mic className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-[22px] border border-black/10 bg-white">
+          <textarea
+            className="w-full h-32 mt-6 rounded-sm bg-white p-5"
+            value={result ?? ""}
+            onChange={(e) => setText(e.target.value)}
+            disabled
+          />
+          <div className="p-5">
+            <div className="mt-6 h-px w-full bg-black/10" />
+
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-[12px] font-semibold text-black/85">
+                150 <span className="font-normal text-black/45">/ 5.000</span>
+              </span>
+
+              <div className="flex items-center gap-3 text-black/70">
+                <button
+                  className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                  aria-label="Speak"
+                >
+                  <Copy className="h-5 w-5" />
+                </button>
+                <button
+                  className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                  aria-label="Mic"
+                >
+                  <Mic className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {error && <p className="text-sm text-red-400">{error}</p>}
+
 
         <div className="">
           <select
@@ -147,16 +218,6 @@ export default function TranslatorPage() {
           {loading ? "Translating..." : "Translate"}
         </button>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
-
-        {/* {result && (
-            <div className="rounded-lg p-4">
-              <h2 className="text-sm font-semibold mb-2 text-slate-300">
-                Translation
-              </h2>
-              <p className="whitespace-pre-wrap">{result}</p>
-            </div>
-          )} */}
       </form>
     </main>
   );
