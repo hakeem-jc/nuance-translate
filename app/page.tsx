@@ -306,17 +306,19 @@ export default function TranslatorPage() {
       <footer className="mt-10 border-t border-black/10 bg-gray-50">
         <div className="mx-auto w-full max-w-7xl px-4 py-10">
           <div className="md:flex md:justify-between md:gap-10">
-            <div className="mb-8 md:mb-0">
-              <a href="./" className="flex items-center">
+            <div className="mb-8 md:mb-0 md:flex md:items-start md:gap-6">
+              <a href="./" className="flex justify-center md:justify-start">
                 <img src="./logo.png" className="h-14" alt="Nuance Logo" />
               </a>
-              <p className="mt-4 text-sm text-gray-600 max-w-sm">
-                Nuance Translate provides AI powered translations and helps you fine-tune tone, plurality, and
-                dialect for more precise translations.
+
+              <p className="mt-4 md:mt-1 text-sm text-gray-600 max-w-sm text-center md:text-left">
+                Nuance Translate provides AI powered translations and helps you
+                fine-tune tone, plurality, and dialect for more precise
+                translations.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-8"> 
+            <div className="grid grid-cols-2 gap-8">
               <div>
                 <h2 className="mb-4 text-xs font-semibold tracking-wider text-gray-900 uppercase">
                   Follow Me
@@ -361,14 +363,18 @@ export default function TranslatorPage() {
 
           <div className="mt-10 border-t border-black/10 pt-6 sm:flex sm:items-center sm:justify-between text-center">
             <span className="text-sm text-gray-600">
-              © {new Date().getFullYear()} {" "}
-              <a href="https://www.hakeemclarke.com/" className="font-medium text-gray-900 hover:underline">
+              © {new Date().getFullYear()}{" "}
+              <a
+                href="https://www.hakeemclarke.com/"
+                className="font-medium text-gray-900 hover:underline"
+              >
                 Hakeem Clarke
               </a>
               . All Rights Reserved.
             </span>
 
-            <div className="mt-4 flex items-center gap-5 sm:mt-0">
+            {/* Center icons on mobile */}
+            <div className="mt-4 flex items-center justify-center gap-5 sm:justify-end sm:mt-0">
               <a
                 href="https://www.linkedin.com/in/hakeemclarke/"
                 className="text-gray-500 hover:text-gray-900 transition-colors"
