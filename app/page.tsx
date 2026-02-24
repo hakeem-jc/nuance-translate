@@ -225,7 +225,7 @@ export default function TranslatorPage() {
               onChange={(e) => setText(e.target.value)}
             />
 
-            <div className="p-5">
+            <div className="p-5 pt-0">
               <div className="mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
@@ -260,7 +260,7 @@ export default function TranslatorPage() {
               disabled
             />
 
-            <div className="p-5">
+            <div className="p-5 pt-0">
               <div className="mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
