@@ -12,7 +12,16 @@ const DIALECTS = [
   "Jamaican Patois",
 ];
 
-const LANGUAGES = ["English", "Spanish", "French", "Russian", "German", "Japanse", "Chinese", "Portuguese"];
+const LANGUAGES = [
+  "English",
+  "Spanish",
+  "French",
+  "Russian",
+  "German",
+  "Japanse",
+  "Chinese",
+  "Portuguese",
+];
 
 export default function TranslatorPage() {
   const [text, setText] = useState("");
@@ -225,7 +234,7 @@ export default function TranslatorPage() {
               onChange={(e) => setText(e.target.value)}
             />
 
-            <div className="p-5 pt-0">
+            <div className="p-5">
               <div className="mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
@@ -253,19 +262,26 @@ export default function TranslatorPage() {
           </div>
 
           {/* Output */}
-          <div className="rounded-sm border border-black/10 bg-white">
+          <div
+            className={[
+              "rounded-sm border border-black/10 bg-white",
+              // Mobile: hide until result exists
+              result ? "block" : "hidden",
+              // Desktop (md+): always show
+              "md:block",
+            ].join(" ")}
+          >
             <textarea
               className="w-full mt-6 rounded-sm bg-white p-5 resize-none"
               value={result ?? ""}
               disabled
             />
 
-            <div className="p-5 pt-0">
+            <div className="p-5">
               <div className="mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
-                  150{" "}
-                  <span className="font-normal text-black/45">/ 5.000</span>
+                  150 <span className="font-normal text-black/45">/ 5.000</span>
                 </span>
 
                 <div className="flex items-center gap-3 text-black/70">
