@@ -12,7 +12,7 @@ const DIALECTS = [
   "Jamaican Patois",
 ];
 
-const LANGUAGES = ["English", "Spanish", "French", "German", "Portuguese"];
+const LANGUAGES = ["English", "Spanish", "French", "Russian", "German", "Japanse", "Chinese", "Portuguese"];
 
 export default function TranslatorPage() {
   const [text, setText] = useState("");
@@ -219,7 +219,7 @@ export default function TranslatorPage() {
           {/* Input */}
           <div className="rounded-sm border border-black/10 bg-white">
             <textarea
-              className="w-full h-48 mt-6 rounded-sm bg-white p-5 focus:outline-none"
+              className="w-full mt-6 rounded-sm bg-white p-5 focus:outline-none resize-none"
               placeholder="Enter text to translate"
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -255,7 +255,7 @@ export default function TranslatorPage() {
           {/* Output */}
           <div className="rounded-sm border border-black/10 bg-white">
             <textarea
-              className="w-full h-48 mt-6 rounded-sm bg-white p-5"
+              className="w-full mt-6 rounded-sm bg-white p-5 resize-none"
               value={result ?? ""}
               disabled
             />
@@ -264,7 +264,8 @@ export default function TranslatorPage() {
               <div className="mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
-                  150 <span className="font-normal text-black/45">/ 5.000</span>
+                  150{" "}
+                  <span className="font-normal text-black/45">/ 5.000</span>
                 </span>
 
                 <div className="flex items-center gap-3 text-black/70">
