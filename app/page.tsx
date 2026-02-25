@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Settings, ArrowLeftRight, Mic, Copy, Volume2 } from "lucide-react";
+import { Settings, ArrowLeftRight, Mic, Copy, Volume2, Square } from "lucide-react";
 import Select from "@/components/Select";
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer, toast } from "react-toastify";
 
 const DIALECTS = [
   "Spanish (Spain)",
@@ -19,10 +19,16 @@ const LANGUAGES = [
   "French",
   "Russian",
   "German",
-  "Japanse",
+  "Japanese",
   "Chinese",
   "Portuguese",
 ];
+
+const MAX_CHARS = 5000;
+
+function formatWithDots(n: number) {
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
 
 export default function TranslatorPage() {
   const [text, setText] = useState("");
@@ -37,6 +43,7 @@ export default function TranslatorPage() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsWrapRef = useRef<HTMLDivElement | null>(null);
+  const [speaking, setSpeaking] = useState<"input" | "output" | null>(null);
 
   const languageOptions = useMemo(
     () => LANGUAGES.map((l) => ({ value: l, label: l })),
@@ -64,6 +71,9 @@ export default function TranslatorPage() {
     [],
   );
 
+  const inputCount = text.length;
+  const outputCount = (result ?? "").length;
+
   async function copyToClipboard(value: string) {
     try {
       if (!value) return;
@@ -74,18 +84,32 @@ export default function TranslatorPage() {
     }
   }
 
-  function speakText(value: string, langLabel: string) {
-    // Placeholder: uses Web Speech API if available
-    // TODO: map your language labels to BCP-47 codes more accurately
+  function cancelSpeech() {
+    if (typeof window === "undefined") return;
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    synth.cancel();
+    setSpeaking(null);
+  }
+
+  function speakText(value: string, langLabel: string, which: "input" | "output") {
     if (!value) return;
     if (typeof window === "undefined") return;
 
     const synth = window.speechSynthesis;
     if (!synth) {
-      // TODO: toast "Speech not supported"
       toast.error("Speech not supported");
       return;
     }
+
+    // If the same side is already speaking, treat click as "stop"
+    if (speaking === which) {
+      cancelSpeech();
+      return;
+    }
+
+    // Cancel any previous speech and start fresh
+    synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(value);
 
@@ -97,24 +121,33 @@ export default function TranslatorPage() {
       Russian: "ru-RU",
       Chinese: "zh-CN",
       Portuguese: "pt-PT",
-      Japanse: "ja-JP",
+      Japanese: "ja-JP",
     };
     utterance.lang = langMap[langLabel] ?? "en-US";
 
-    synth.cancel(); // stop any previous speech
+    utterance.onstart = () => setSpeaking(which);
+    utterance.onend = () => setSpeaking(null);
+    utterance.onerror = () => {
+      setSpeaking(null);
+      toast.error("Speech failed");
+    };
+
     synth.speak(utterance);
   }
 
   function startDictationPlaceholder() {
-    // TODO: toast "Mic dictation not implemented yet"
     console.log("Mic placeholder: start dictation");
   }
 
   function swapLanguages(e?: React.MouseEvent) {
     e?.preventDefault();
+
+    // stop speech when swapping to avoid confusion
+    cancelSpeech();
+
     setFrom((prevFrom) => {
-      setTo(prevFrom); 
-      return to; 
+      setTo(prevFrom);
+      return to;
     });
 
     setText((prevText) => {
@@ -125,6 +158,13 @@ export default function TranslatorPage() {
 
   async function handleTranslate(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
+
+    if (!text) return;
+    if (text.length > MAX_CHARS) {
+      toast.error(`Max ${formatWithDots(MAX_CHARS)} characters`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -177,6 +217,12 @@ export default function TranslatorPage() {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [settingsOpen]);
+
+  // Cleanup: stop speech on unmount
+  useEffect(() => {
+    return () => cancelSpeech();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <main className="bg-(--background)">
@@ -250,7 +296,10 @@ export default function TranslatorPage() {
               id="from"
               label="From"
               value={from}
-              onChange={setFrom}
+              onChange={(v) => {
+                cancelSpeech();
+                setFrom(v);
+              }}
               options={languageOptions}
               placeholder="From"
             />
@@ -270,7 +319,10 @@ export default function TranslatorPage() {
               id="to"
               label="To"
               value={to}
-              onChange={setTo}
+              onChange={(v) => {
+                cancelSpeech();
+                setTo(v);
+              }}
               options={languageOptions}
               placeholder="To"
             />
@@ -285,33 +337,53 @@ export default function TranslatorPage() {
               className="w-full mt-6 rounded-sm bg-white p-5 focus:outline-none resize-none"
               placeholder="Enter text to translate"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                // Enforce max length at input time
+                if (next.length > MAX_CHARS)  {
+                  toast.error("Input exceeds maximum length");
+                  return;
+                }
+                setText(next);
+              }}
             />
 
             <div className="p-5">
               <div className="mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
-                  150 <span className="font-normal text-black/45">/ 5.000</span>
+                  {formatWithDots(inputCount)}{" "}
+                  <span className="font-normal text-black/45">
+                    / {formatWithDots(MAX_CHARS)}
+                  </span>
                 </span>
 
                 <div className="flex items-center gap-3 text-black/70">
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
-                    aria-label="Speaker"
+                    aria-label={speaking === "input" ? "Stop speech" : "Speaker"}
                     type="button"
-                    onClick={() => speakText(text, from)}
+                    onClick={() => speakText(text, from, "input")}
+                    disabled={!text}
+                    title={speaking === "input" ? "Stop" : "Speak"}
                   >
-                    <Volume2 className="h-5 w-5" />
+                    {speaking === "input" ? (
+                      <Square className="h-5 w-5" />
+                    ) : (
+                      <Volume2 className="h-5 w-5" />
+                    )}
                   </button>
+
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Copy"
                     type="button"
                     onClick={() => copyToClipboard(text)}
+                    disabled={!text}
                   >
                     <Copy className="h-5 w-5" />
                   </button>
+
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Mic"
@@ -329,9 +401,7 @@ export default function TranslatorPage() {
           <div
             className={[
               "rounded-sm border border-black/10 bg-white",
-              // Mobile: hide until result exists
               result ? "block" : "hidden",
-              // Desktop (md+): always show
               "md:block",
             ].join(" ")}
           >
@@ -345,19 +415,28 @@ export default function TranslatorPage() {
               <div className="mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
-                  150 <span className="font-normal text-black/45">/ 5.000</span>
+                  {formatWithDots(outputCount)}{" "}
+                  <span className="font-normal text-black/45">
+                    / {formatWithDots(MAX_CHARS)}
+                  </span>
                 </span>
 
                 <div className="flex items-center gap-3 text-black/70">
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
-                    aria-label="Speaker"
+                    aria-label={speaking === "output" ? "Stop speech" : "Speaker"}
                     type="button"
-                    onClick={() => speakText(result ?? "", to)}
+                    onClick={() => speakText(result ?? "", to, "output")}
                     disabled={!result}
+                    title={speaking === "output" ? "Stop" : "Speak"}
                   >
-                    <Volume2 className="h-5 w-5" />
+                    {speaking === "output" ? (
+                      <Square className="h-5 w-5" />
+                    ) : (
+                      <Volume2 className="h-5 w-5" />
+                    )}
                   </button>
+
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Copy"
@@ -367,6 +446,7 @@ export default function TranslatorPage() {
                   >
                     <Copy className="h-5 w-5" />
                   </button>
+
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Mic"
@@ -391,12 +471,10 @@ export default function TranslatorPage() {
             {loading ? "Translating..." : "Translate"}
           </button>
 
-          {/* TODO - Replace this with a toast message */}
           {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
         </div>
       </form>
 
-      {/* Footer unchanged */}
       <footer className="mt-10 border-t border-black/10 bg-gray-50">
         <div className="mx-auto w-full max-w-7xl px-4 py-10">
           <div className="md:flex md:justify-between md:gap-10">
@@ -443,10 +521,7 @@ export default function TranslatorPage() {
                 </h2>
                 <ul className="text-sm text-gray-600 font-medium space-y-3">
                   <li>
-                    <a
-                      href="/tos"
-                      className="hover:text-gray-900 hover:underline"
-                    >
+                    <a href="/tos" className="hover:text-gray-900 hover:underline">
                       Terms of Service
                     </a>
                   </li>
@@ -527,6 +602,7 @@ export default function TranslatorPage() {
           </div>
         </div>
       </footer>
+
       <ToastContainer position="bottom-right" />
     </main>
   );
