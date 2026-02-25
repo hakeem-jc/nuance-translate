@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Settings, ArrowLeftRight, Mic, Copy } from "lucide-react";
+import { Settings, ArrowLeftRight, Mic, Copy, Volume2 } from "lucide-react";
 import Select from "@/components/Select";
 
 const DIALECTS = [
@@ -243,14 +243,21 @@ export default function TranslatorPage() {
 
                 <div className="flex items-center gap-3 text-black/70">
                   <button
-                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
+                    aria-label="Speaker"
+                    type="button"
+                  >
+                    <Volume2 className="h-5 w-5" />
+                  </button>
+                  <button
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Copy"
                     type="button"
                   >
                     <Copy className="h-5 w-5" />
                   </button>
                   <button
-                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Mic"
                     type="button"
                   >
@@ -286,14 +293,21 @@ export default function TranslatorPage() {
 
                 <div className="flex items-center gap-3 text-black/70">
                   <button
-                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
+                    aria-label="Speaker"
+                    type="button"
+                  >
+                    <Volume2 className="h-5 w-5" />
+                  </button>
+                  <button
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Copy"
                     type="button"
                   >
                     <Copy className="h-5 w-5" />
                   </button>
                   <button
-                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center"
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Mic"
                     type="button"
                   >
