@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Settings, ArrowLeftRight, Mic, Copy, Volume2 } from "lucide-react";
 import Select from "@/components/Select";
+import { ToastContainer, toast } from 'react-toastify';
 
 const DIALECTS = [
   "Spanish (Spain)",
@@ -63,10 +64,63 @@ export default function TranslatorPage() {
     [],
   );
 
+  async function copyToClipboard(value: string) {
+    try {
+      if (!value) return;
+      await navigator.clipboard.writeText(value);
+      toast.success("Copied!");
+    } catch {
+      toast.error("Something Went Wrong");
+    }
+  }
+
+  function speakText(value: string, langLabel: string) {
+    // Placeholder: uses Web Speech API if available
+    // TODO: map your language labels to BCP-47 codes more accurately
+    if (!value) return;
+    if (typeof window === "undefined") return;
+
+    const synth = window.speechSynthesis;
+    if (!synth) {
+      // TODO: toast "Speech not supported"
+      toast.error("Speech not supported");
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(value);
+
+    const langMap: Record<string, string> = {
+      English: "en-US",
+      Spanish: "es-ES",
+      French: "fr-FR",
+      German: "de-DE",
+      Russian: "ru-RU",
+      Chinese: "zh-CN",
+      Portuguese: "pt-PT",
+      Japanse: "ja-JP",
+    };
+    utterance.lang = langMap[langLabel] ?? "en-US";
+
+    synth.cancel(); // stop any previous speech
+    synth.speak(utterance);
+  }
+
+  function startDictationPlaceholder() {
+    // TODO: toast "Mic dictation not implemented yet"
+    console.log("Mic placeholder: start dictation");
+  }
+
   function swapLanguages(e?: React.MouseEvent) {
     e?.preventDefault();
-    setFrom(to);
-    setTo(from);
+    setFrom((prevFrom) => {
+      setTo(prevFrom); 
+      return to; 
+    });
+
+    setText((prevText) => {
+      setResult(prevText);
+      return result ?? "";
+    });
   }
 
   async function handleTranslate(e: React.MouseEvent<HTMLButtonElement>) {
@@ -246,6 +300,7 @@ export default function TranslatorPage() {
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Speaker"
                     type="button"
+                    onClick={() => speakText(text, from)}
                   >
                     <Volume2 className="h-5 w-5" />
                   </button>
@@ -253,6 +308,7 @@ export default function TranslatorPage() {
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Copy"
                     type="button"
+                    onClick={() => copyToClipboard(text)}
                   >
                     <Copy className="h-5 w-5" />
                   </button>
@@ -260,6 +316,7 @@ export default function TranslatorPage() {
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Mic"
                     type="button"
+                    onClick={startDictationPlaceholder}
                   >
                     <Mic className="h-5 w-5" />
                   </button>
@@ -296,6 +353,8 @@ export default function TranslatorPage() {
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Speaker"
                     type="button"
+                    onClick={() => speakText(result ?? "", to)}
+                    disabled={!result}
                   >
                     <Volume2 className="h-5 w-5" />
                   </button>
@@ -303,6 +362,8 @@ export default function TranslatorPage() {
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Copy"
                     type="button"
+                    onClick={() => copyToClipboard(result ?? "")}
+                    disabled={!result}
                   >
                     <Copy className="h-5 w-5" />
                   </button>
@@ -310,6 +371,7 @@ export default function TranslatorPage() {
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Mic"
                     type="button"
+                    onClick={startDictationPlaceholder}
                   >
                     <Mic className="h-5 w-5" />
                   </button>
@@ -334,6 +396,7 @@ export default function TranslatorPage() {
         </div>
       </form>
 
+      {/* Footer unchanged */}
       <footer className="mt-10 border-t border-black/10 bg-gray-50">
         <div className="mx-auto w-full max-w-7xl px-4 py-10">
           <div className="md:flex md:justify-between md:gap-10">
@@ -404,7 +467,6 @@ export default function TranslatorPage() {
               . All Rights Reserved.
             </span>
 
-            {/* Center icons on mobile */}
             <div className="mt-4 flex items-center justify-center gap-5 sm:justify-end sm:mt-0">
               <a
                 href="https://www.linkedin.com/in/hakeemclarke/"
@@ -465,6 +527,7 @@ export default function TranslatorPage() {
           </div>
         </div>
       </footer>
+      <ToastContainer position="bottom-right" />
     </main>
   );
 }
