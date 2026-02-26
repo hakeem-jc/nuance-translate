@@ -548,7 +548,7 @@ export default function TranslatorPage() {
           <div className="md:flex md:justify-between md:gap-10">
             <div className="mb-8 md:mb-0 md:flex md:items-start md:gap-6">
               <a href="./" className="flex justify-center md:justify-start">
-                <img src="./logo.png" className="h-14" alt="Nuance Logo" />
+                <img src="./logo-nobg.png" className="h-14" alt="Nuance Logo" />
               </a>
 
               <p className="mt-4 md:mt-1 text-sm text-gray-600 max-w-sm text-center md:text-left">
