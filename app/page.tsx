@@ -533,7 +533,7 @@ export default function TranslatorPage() {
         <div className="text-center">
           <button
             disabled={!text || loading}
-            className="w-64 cursor-pointer text-center rounded-[22px] bg-(--foreground) text-white py-3 font-medium hover:bg-(--accent) disabled:opacity-50"
+            className="w-64 cursor-pointer text-center rounded-3xl bg-(--foreground) text-white py-3 font-medium hover:bg-(--accent) disabled:opacity-50"
             type="submit"
           >
             {loading ? "Translating..." : "Translate"}
@@ -594,6 +594,22 @@ export default function TranslatorPage() {
                       className="hover:text-gray-900 hover:underline"
                     >
                       Terms of Service
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="/privacy"
+                      className="hover:text-gray-900 hover:underline"
+                    >
+                      Privacy Policy
+                    </a>
+                  </li>
+                   <li>
+                    <a
+                      href="/cookies"
+                      className="hover:text-gray-900 hover:underline"
+                    >
+                      Cookie Policy
                     </a>
                   </li>
                 </ul>
