@@ -199,6 +199,8 @@ export default function TranslatorPage() {
   function submitOnEnter(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      // Close mobile keyboard by unfocusing textarea
+      (e.currentTarget as HTMLTextAreaElement).blur();
       formRef.current?.requestSubmit();
     }
   }
