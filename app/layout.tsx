@@ -64,6 +64,20 @@ export const metadata: Metadata = {
     icon: "https://nuance-translate.vercel.app/favicon.ico",
     shortcut: "https://nuance-translate.vercel.app/favicon-16x16.png",
     apple: "https://nuance-translate.vercel.app/apple-touch-icon.png",
+    other: [
+      {
+        rel: "icon",
+        url: "https://nuance-translate.vercel.app/android-chrome-192x192.png",
+        sizes: "192x192",
+        type: "image/png",
+      },
+      {
+        rel: "icon",
+        url: "https://nuance-translate.vercel.app/android-chrome-512x512.png",
+        sizes: "512x512",
+        type: "image/png",
+      },
+    ],
   },
 
   robots: {
