@@ -163,8 +163,12 @@ export default function TranslatorPage() {
 
     utterance.onstart = () => setSpeaking(which);
     utterance.onend = () => setSpeaking(null);
-    utterance.onerror = () => {
+    utterance.onerror = (e: SpeechSynthesisErrorEvent) => {
       setSpeaking(null);
+
+      const err = (e.error || "").toLowerCase();
+      if (err === "canceled" || err === "interrupted") return;
+
       toast.error("Speech failed");
     };
 
