@@ -23,6 +23,12 @@ function buildTranslationPrompt({ text, from, to, options }: TranslateRequest) {
     instructions.push(`Ensure the translation is ${options.plurality}.`);
   }
 
+  if (options?.gender && options.gender !== "unspecified") {
+    instructions.push(
+      `Where applicable, use ${options.gender} gendered language (e.g., pronouns/titles) in the translation.`
+    );
+  }
+
   instructions.push(
     "Preserve meaning and cultural nuance. Do not explain the translation."
   );
@@ -55,20 +61,15 @@ export async function POST(req: NextRequest) {
           content:
             "You are a professional human translator who preserves meaning, tone, and cultural nuance.",
         },
-        {
-          role: "user",
-          content: prompt,
-        },
+        { role: "user", content: prompt },
       ],
       temperature: 0.3,
     });
 
-    let content = response.choices[0]?.message?.content ?? "";
+    const content = response.choices[0]?.message?.content ?? "";
     const translation = content.replace(/['"]/g, "");
 
-    return NextResponse.json({
-      translation,
-    });
+    return NextResponse.json({ translation });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Translation failed" }, { status: 500 });

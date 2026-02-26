@@ -1,17 +1,21 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Settings, ArrowLeftRight, Mic, Copy, Volume2, Square } from "lucide-react";
+import {
+  Settings,
+  ArrowLeftRight,
+  Mic,
+  Copy,
+  Volume2,
+  Square,
+} from "lucide-react";
 import Select from "@/components/Select";
 import { ToastContainer, toast } from "react-toastify";
 
-const DIALECTS = [
-  "Spanish (Spain)",
-  "Spanish (Caribbean)",
-  "Mexican Spanish",
-  "Argentinian Spanish",
-  "Colombian Spanish",
-  "Jamaican Patois",
-];
+const DIALECTS_BY_LANGUAGE: Record<string, string[]> = {
+  English: ["US", "UK", "Caribbean"],
+  Spanish: ["Spain", "Colombian", "Cuban", "Mexican", "Argentinian"],
+  Portuguese: ["Portugal", "Brazil"],
+};
 
 const LANGUAGES = [
   "English",
@@ -30,20 +34,31 @@ function formatWithDots(n: number) {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+function getDialectOptions(language: string) {
+  return DIALECTS_BY_LANGUAGE[language] ?? ["Standard"];
+}
+
 export default function TranslatorPage() {
   const [text, setText] = useState("");
   const [from, setFrom] = useState("English");
   const [to, setTo] = useState("Spanish");
-  const [dialect, setDialect] = useState("");
+
+  const [dialect, setDialect] = useState("Standard");
+
   const [tone, setTone] = useState<"formal" | "informal" | "">("");
   const [plurality, setPlurality] = useState<"singular" | "plural" | "">("");
+
+  const [gender, setGender] = useState<
+    "unspecified" | "male" | "female" | "neutral"
+  >("unspecified");
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsWrapRef = useRef<HTMLDivElement | null>(null);
   const [speaking, setSpeaking] = useState<"input" | "output" | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const languageOptions = useMemo(
     () => LANGUAGES.map((l) => ({ value: l, label: l })),
@@ -51,8 +66,8 @@ export default function TranslatorPage() {
   );
 
   const dialectOptions = useMemo(
-    () => DIALECTS.map((d) => ({ value: d, label: d })),
-    [],
+    () => getDialectOptions(to).map((d) => ({ value: d, label: d })),
+    [to],
   );
 
   const toneOptions = useMemo(
@@ -70,6 +85,23 @@ export default function TranslatorPage() {
     ],
     [],
   );
+
+  const genderOptions = useMemo(
+    () => [
+      { value: "unspecified", label: "Unspecified" },
+      { value: "male", label: "Male" },
+      { value: "female", label: "Female" },
+      { value: "neutral", label: "Neutral" },
+    ],
+    [],
+  );
+
+  useEffect(() => {
+    const allowed = getDialectOptions(to);
+    if (!allowed.includes(dialect)) setDialect("Standard");
+    if (!dialect) setDialect("Standard");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [to]);
 
   const inputCount = text.length;
   const outputCount = (result ?? "").length;
@@ -92,7 +124,11 @@ export default function TranslatorPage() {
     setSpeaking(null);
   }
 
-  function speakText(value: string, langLabel: string, which: "input" | "output") {
+  function speakText(
+    value: string,
+    langLabel: string,
+    which: "input" | "output",
+  ) {
     if (!value) return;
     if (typeof window === "undefined") return;
 
@@ -156,9 +192,14 @@ export default function TranslatorPage() {
     });
   }
 
-  async function handleTranslate(e: React.MouseEvent<HTMLButtonElement>) {
-    e.preventDefault();
+  function submitOnEnter(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      formRef.current?.requestSubmit();
+    }
+  }
 
+  async function handleTranslate() {
     if (!text) return;
     if (text.length > MAX_CHARS) {
       toast.error(`Max ${formatWithDots(MAX_CHARS)} characters`);
@@ -181,6 +222,7 @@ export default function TranslatorPage() {
             dialect: dialect || undefined,
             tone: tone || undefined,
             plurality: plurality || undefined,
+            gender: gender || undefined,
           },
         }),
       });
@@ -281,6 +323,15 @@ export default function TranslatorPage() {
                     options={pluralityOptions}
                     placeholder="Optional"
                   />
+
+                  <Select
+                    id="gender"
+                    label="Gender"
+                    value={gender}
+                    onChange={(v) => setGender(v as any)}
+                    options={genderOptions}
+                    placeholder="Optional"
+                  />
                 </div>
               </div>
             )}
@@ -288,7 +339,14 @@ export default function TranslatorPage() {
         </div>
       </header>
 
-      <form className="flex flex-col gap-4 w-11/12 mx-auto max-w-6xl">
+      <form
+        ref={formRef}
+        className="flex flex-col gap-4 w-11/12 mx-auto max-w-6xl"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleTranslate();
+        }}
+      >
         {/* Language Row */}
         <div className="mt-6 flex items-end gap-3">
           <div className="flex-1 min-w-35 sm:min-w-45">
@@ -337,10 +395,11 @@ export default function TranslatorPage() {
               className="w-full mt-6 rounded-sm bg-white p-5 focus:outline-none resize-none"
               placeholder="Enter text to translate"
               value={text}
+              onKeyDown={submitOnEnter}
               onChange={(e) => {
                 const next = e.target.value;
                 // Enforce max length at input time
-                if (next.length > MAX_CHARS)  {
+                if (next.length > MAX_CHARS) {
                   toast.error("Input exceeds maximum length");
                   return;
                 }
@@ -361,7 +420,9 @@ export default function TranslatorPage() {
                 <div className="flex items-center gap-3 text-black/70">
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
-                    aria-label={speaking === "input" ? "Stop speech" : "Speaker"}
+                    aria-label={
+                      speaking === "input" ? "Stop speech" : "Speaker"
+                    }
                     type="button"
                     onClick={() => speakText(text, from, "input")}
                     disabled={!text}
@@ -424,7 +485,9 @@ export default function TranslatorPage() {
                 <div className="flex items-center gap-3 text-black/70">
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
-                    aria-label={speaking === "output" ? "Stop speech" : "Speaker"}
+                    aria-label={
+                      speaking === "output" ? "Stop speech" : "Speaker"
+                    }
                     type="button"
                     onClick={() => speakText(result ?? "", to, "output")}
                     disabled={!result}
@@ -463,10 +526,9 @@ export default function TranslatorPage() {
 
         <div className="text-center">
           <button
-            onClick={handleTranslate}
             disabled={!text || loading}
             className="w-64 cursor-pointer text-center rounded-[22px] bg-(--foreground) text-white py-3 font-medium hover:bg-(--accent) disabled:opacity-50"
-            type="button"
+            type="submit"
           >
             {loading ? "Translating..." : "Translate"}
           </button>
@@ -521,7 +583,10 @@ export default function TranslatorPage() {
                 </h2>
                 <ul className="text-sm text-gray-600 font-medium space-y-3">
                   <li>
-                    <a href="/tos" className="hover:text-gray-900 hover:underline">
+                    <a
+                      href="/tos"
+                      className="hover:text-gray-900 hover:underline"
+                    >
                       Terms of Service
                     </a>
                   </li>
