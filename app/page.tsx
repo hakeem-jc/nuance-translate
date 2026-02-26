@@ -596,6 +596,22 @@ export default function TranslatorPage() {
                       Terms of Service
                     </a>
                   </li>
+                  <li>
+                    <a
+                      href="/privacy"
+                      className="hover:text-gray-900 hover:underline"
+                    >
+                      Privacy Policy
+                    </a>
+                  </li>
+                   <li>
+                    <a
+                      href="/cookies"
+                      className="hover:text-gray-900 hover:underline"
+                    >
+                      Cookie Policy
+                    </a>
+                  </li>
                 </ul>
               </div>
             </div>
