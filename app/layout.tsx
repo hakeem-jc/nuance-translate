@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     siteName: "Nuance AI Translator",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://nuance-translate.vercel.app/og-image.png",
         width: 1200,
         height: 630,
         alt: "Nuance AI Translator",
@@ -57,13 +57,13 @@ export const metadata: Metadata = {
     title: "Nuance AI Translator",
     description:
       "Translate with nuance. Control tone, dialect, and plurality effortlessly.",
-    images: ["/og-image.png"],
+    images: ["https://nuance-translate.vercel.app/og-image.png"],
   },
 
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
+    icon: "https://nuance-translate.vercel.app/favicon.ico",
+    shortcut: "https://nuance-translate.vercel.app/favicon-16x16.png",
+    apple: "https://nuance-translate.vercel.app/apple-touch-icon.png",
   },
 
   robots: {
