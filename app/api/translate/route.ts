@@ -30,7 +30,7 @@ function buildTranslationPrompt({ text, from, to, options }: TranslateRequest) {
   }
 
   instructions.push(
-    "Preserve meaning and cultural nuance. Do not explain the translation."
+    "Preserve meaning and cultural nuance. Do not explain the translation. Don't include quotation marks in your response. Just the text."
   );
 
   return `
@@ -66,8 +66,7 @@ export async function POST(req: NextRequest) {
       temperature: 0.3,
     });
 
-    const content = response.choices[0]?.message?.content ?? "";
-    const translation = content.replace(/['"]/g, "");
+    const translation = response.choices[0]?.message?.content ?? "";
 
     return NextResponse.json({ translation });
   } catch (error) {
