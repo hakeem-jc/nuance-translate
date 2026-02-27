@@ -7,6 +7,8 @@ import {
   Copy,
   Volume2,
   Square,
+  History,
+  Trash2,
 } from "lucide-react";
 import Select from "@/components/Select";
 import { ToastContainer, toast } from "react-toastify";
@@ -30,6 +32,41 @@ const LANGUAGES = [
 
 const MAX_CHARS = 5000;
 
+const LS_PREFS_KEY = "nuance_translate_prefs_v1";
+const LS_HISTORY_KEY = "nuance_translate_history_v1";
+const HISTORY_LIMIT = 30;
+
+type Prefs = {
+  dialect?: string;
+  tone?: "formal" | "informal" | "";
+  plurality?: "singular" | "plural" | "";
+  gender?: "unspecified" | "male" | "female" | "neutral";
+};
+
+type HistoryItem = {
+  id: string;
+  createdAt: number;
+  from: string;
+  to: string;
+  text: string;
+  translation: string;
+  options: {
+    dialect?: string;
+    tone?: string;
+    plurality?: string;
+    gender?: string;
+  };
+};
+
+function safeJsonParse<T>(value: string | null): T | null {
+  if (!value) return null;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+}
+
 function formatWithDots(n: number) {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
@@ -42,12 +79,9 @@ export default function TranslatorPage() {
   const [text, setText] = useState("");
   const [from, setFrom] = useState("English");
   const [to, setTo] = useState("Spanish");
-
   const [dialect, setDialect] = useState("Standard");
-
   const [tone, setTone] = useState<"formal" | "informal" | "">("");
   const [plurality, setPlurality] = useState<"singular" | "plural" | "">("");
-
   const [gender, setGender] = useState<
     "unspecified" | "male" | "female" | "neutral"
   >("unspecified");
@@ -55,8 +89,14 @@ export default function TranslatorPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsWrapRef = useRef<HTMLDivElement | null>(null);
+
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const historyWrapRef = useRef<HTMLDivElement | null>(null);
+
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [speaking, setSpeaking] = useState<"input" | "output" | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
 
@@ -96,6 +136,41 @@ export default function TranslatorPage() {
     [],
   );
 
+  // Load prefs + history once on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const savedPrefs = safeJsonParse<Prefs>(
+      window.localStorage.getItem(LS_PREFS_KEY),
+    );
+    if (savedPrefs) {
+      if (savedPrefs.dialect) setDialect(savedPrefs.dialect);
+      if (savedPrefs.tone !== undefined) setTone(savedPrefs.tone);
+      if (savedPrefs.plurality !== undefined) setPlurality(savedPrefs.plurality);
+      if (savedPrefs.gender) setGender(savedPrefs.gender);
+    }
+
+    const savedHistory = safeJsonParse<HistoryItem[]>(
+      window.localStorage.getItem(LS_HISTORY_KEY),
+    );
+    if (Array.isArray(savedHistory)) setHistory(savedHistory);
+  }, []);
+
+  // Persist prefs whenever they change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const prefs: Prefs = { dialect, tone, plurality, gender };
+    window.localStorage.setItem(LS_PREFS_KEY, JSON.stringify(prefs));
+  }, [dialect, tone, plurality, gender]);
+
+  // Persist history whenever it changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history));
+  }, [history]);
+
+  // Keep dialect valid for selected "to" language (and do not overwrite saved prefs unless needed)
   useEffect(() => {
     const allowed = getDialectOptions(to);
     if (!allowed.includes(dialect)) setDialect("Standard");
@@ -181,8 +256,6 @@ export default function TranslatorPage() {
 
   function swapLanguages(e?: React.MouseEvent) {
     e?.preventDefault();
-
-    // stop speech when swapping to avoid confusion
     cancelSpeech();
 
     setFrom((prevFrom) => {
@@ -199,9 +272,40 @@ export default function TranslatorPage() {
   function submitOnEnter(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      // Close mobile keyboard by unfocusing textarea
       (e.currentTarget as HTMLTextAreaElement).blur();
       formRef.current?.requestSubmit();
+    }
+  }
+
+  function addToHistory(next: Omit<HistoryItem, "id">) {
+    setHistory((prev) => {
+      const item: HistoryItem = {
+        ...next,
+        id:
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      };
+
+      // de-dupe by (from,to,text,translation) to reduce spam
+      const filtered = prev.filter(
+        (h) =>
+          !(
+            h.from === item.from &&
+            h.to === item.to &&
+            h.text === item.text &&
+            h.translation === item.translation
+          ),
+      );
+
+      return [item, ...filtered].slice(0, HISTORY_LIMIT);
+    });
+  }
+
+  function clearHistory() {
+    setHistory([]);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(LS_HISTORY_KEY);
     }
   }
 
@@ -216,6 +320,13 @@ export default function TranslatorPage() {
     setError(null);
     setResult(null);
 
+    const options = {
+      dialect: dialect || undefined,
+      tone: tone || undefined,
+      plurality: plurality || undefined,
+      gender: gender || undefined,
+    };
+
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
@@ -224,12 +335,7 @@ export default function TranslatorPage() {
           text,
           from,
           to,
-          options: {
-            dialect: dialect || undefined,
-            tone: tone || undefined,
-            plurality: plurality || undefined,
-            gender: gender || undefined,
-          },
+          options,
         }),
       });
 
@@ -237,6 +343,15 @@ export default function TranslatorPage() {
 
       const data = await res.json();
       setResult(data.translation);
+
+      addToHistory({
+        createdAt: Date.now(),
+        from,
+        to,
+        text,
+        translation: data.translation,
+        options,
+      });
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -244,18 +359,26 @@ export default function TranslatorPage() {
     }
   }
 
-  // Close dropdown on outside click or Escape
+  // Close dropdowns on outside click or Escape
   useEffect(() => {
     function onPointerDown(e: PointerEvent) {
-      if (!settingsOpen) return;
-      const el = settingsWrapRef.current;
-      if (!el) return;
-      if (!el.contains(e.target as Node)) setSettingsOpen(false);
+      const target = e.target as Node;
+
+      if (settingsOpen) {
+        const el = settingsWrapRef.current;
+        if (el && !el.contains(target)) setSettingsOpen(false);
+      }
+
+      if (historyOpen) {
+        const el = historyWrapRef.current;
+        if (el && !el.contains(target)) setHistoryOpen(false);
+      }
     }
 
     function onKeyDown(e: KeyboardEvent) {
-      if (!settingsOpen) return;
-      if (e.key === "Escape") setSettingsOpen(false);
+      if (e.key !== "Escape") return;
+      if (settingsOpen) setSettingsOpen(false);
+      if (historyOpen) setHistoryOpen(false);
     }
 
     window.addEventListener("pointerdown", onPointerDown);
@@ -264,7 +387,7 @@ export default function TranslatorPage() {
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [settingsOpen]);
+  }, [settingsOpen, historyOpen]);
 
   // Cleanup: stop speech on unmount
   useEffect(() => {
@@ -280,67 +403,215 @@ export default function TranslatorPage() {
             Nuance Translate
           </h1>
 
-          {/* Settings */}
-          <div className="relative" ref={settingsWrapRef}>
-            <button
-              className="h-12 w-12 rounded-full border border-black/10 bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)] flex items-center justify-center cursor-pointer"
-              aria-label="Settings"
-              type="button"
-              onClick={() => setSettingsOpen((v) => !v)}
-            >
-              <Settings className="h-5 w-5 text-black/70 hover:text-black/95 transition-colors" />
-            </button>
-
-            {settingsOpen && (
-              <div
-                className="
-                  absolute right-0 mt-3 w-70
-                  rounded-[18px] border border-black/10 bg-white
-                  shadow-[0_18px_50px_rgba(0,0,0,0.14)]
-                  p-4 z-50
-                "
-                role="menu"
-                aria-label="Translation settings"
+          <div className="flex items-center gap-2">
+            {/* History */}
+            <div className="relative" ref={historyWrapRef}>
+              <button
+                className="h-12 w-12 rounded-full border border-black/10 bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)] flex items-center justify-center cursor-pointer"
+                aria-label="Translation history"
+                type="button"
+                onClick={() => {
+                  setHistoryOpen((v) => !v);
+                  setSettingsOpen(false);
+                }}
               >
-                <div className="space-y-3">
-                  <Select
-                    id="dialect"
-                    label="Dialect"
-                    value={dialect}
-                    onChange={setDialect}
-                    options={dialectOptions}
-                    placeholder="Optional"
-                  />
+                <History className="h-5 w-5 text-black/70 hover:text-black/95 transition-colors" />
+              </button>
 
-                  <Select
-                    id="tone"
-                    label="Tone"
-                    value={tone}
-                    onChange={(v) => setTone(v as any)}
-                    options={toneOptions}
-                    placeholder="Optional"
-                  />
+              {historyOpen && (
+                <div
+                  className="
+                    absolute right-0 mt-3 w-90 sm:w-105
+                    rounded-[18px] border border-black/10 bg-white
+                    shadow-[0_18px_50px_rgba(0,0,0,0.14)]
+                    p-4 z-50
+                  "
+                  role="menu"
+                  aria-label="Translation history"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold text-black/85">
+                      History
+                    </p>
 
-                  <Select
-                    id="plurality"
-                    label="Plurality"
-                    value={plurality}
-                    onChange={(v) => setPlurality(v as any)}
-                    options={pluralityOptions}
-                    placeholder="Optional"
-                  />
+                    <button
+                      type="button"
+                      onClick={clearHistory}
+                      className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold text-black/70 hover:bg-black/5"
+                      disabled={history.length === 0}
+                      title="Clear history"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Clear
+                    </button>
+                  </div>
 
-                  <Select
-                    id="gender"
-                    label="Gender"
-                    value={gender}
-                    onChange={(v) => setGender(v as any)}
-                    options={genderOptions}
-                    placeholder="Optional"
-                  />
+                  {history.length === 0 ? (
+                    <p className="text-sm text-black/55">
+                      No translations yet.
+                    </p>
+                  ) : (
+                    <ul className="max-h-95 overflow-auto pr-1 space-y-3">
+                      {history.map((h) => (
+                        <li
+                          key={h.id}
+                          className="rounded-xl border border-black/10 p-3 hover:bg-black/2"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-[12px] font-semibold text-black/80">
+                              {h.from} → {h.to}
+                            </p>
+                            <p className="text-[11px] text-black/45">
+                              {new Date(h.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+
+                          <div className="mt-2 grid grid-cols-1 gap-2">
+                            <div>
+                              <p className="text-[11px] font-semibold text-black/60">
+                                Input
+                              </p>
+                              <p className="text-[12px] text-black/75 line-clamp-3">
+                                {h.text}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-[11px] font-semibold text-black/60">
+                                Output
+                              </p>
+                              <p className="text-[12px] text-black/75 line-clamp-3">
+                                {h.translation}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 flex items-center gap-2">
+                            <button
+                              type="button"
+                              className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-black/70 hover:bg-black/5"
+                              onClick={() => {
+                                cancelSpeech();
+                                setFrom(h.from);
+                                setTo(h.to);
+                                setText(h.text);
+                                setResult(h.translation);
+
+                                // Restore saved options
+                                if (h.options.dialect) setDialect(h.options.dialect);
+                                if (h.options.tone)
+                                  setTone(h.options.tone as any);
+                                if (h.options.plurality)
+                                  setPlurality(h.options.plurality as any);
+                                if (h.options.gender)
+                                  setGender(h.options.gender as any);
+
+                                setHistoryOpen(false);
+                              }}
+                            >
+                              Load
+                            </button>
+
+                            <button
+                              type="button"
+                              className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-black/70 hover:bg-black/5"
+                              onClick={() => copyToClipboard(h.translation)}
+                            >
+                              Copy output
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Settings */}
+            <div className="relative" ref={settingsWrapRef}>
+              <button
+                className="h-12 w-12 rounded-full border border-black/10 bg-white shadow-[0_10px_25px_rgba(0,0,0,0.08)] flex items-center justify-center cursor-pointer"
+                aria-label="Settings"
+                type="button"
+                onClick={() => {
+                  setSettingsOpen((v) => !v);
+                  setHistoryOpen(false);
+                }}
+              >
+                <Settings className="h-5 w-5 text-black/70 hover:text-black/95 transition-colors" />
+              </button>
+
+              {settingsOpen && (
+                <div
+                  className="
+                    absolute right-0 mt-3 w-70
+                    rounded-[18px] border border-black/10 bg-white
+                    shadow-[0_18px_50px_rgba(0,0,0,0.14)]
+                    p-4 z-50
+                  "
+                  role="menu"
+                  aria-label="Translation settings"
+                >
+                  <div className="space-y-3">
+                    <Select
+                      id="dialect"
+                      label="Dialect"
+                      value={dialect}
+                      onChange={setDialect}
+                      options={dialectOptions}
+                      placeholder="Optional"
+                    />
+
+                    <Select
+                      id="tone"
+                      label="Tone"
+                      value={tone}
+                      onChange={(v) => setTone(v as any)}
+                      options={toneOptions}
+                      placeholder="Optional"
+                    />
+
+                    <Select
+                      id="plurality"
+                      label="Plurality"
+                      value={plurality}
+                      onChange={(v) => setPlurality(v as any)}
+                      options={pluralityOptions}
+                      placeholder="Optional"
+                    />
+
+                    <Select
+                      id="gender"
+                      label="Gender"
+                      value={gender}
+                      onChange={(v) => setGender(v as any)}
+                      options={genderOptions}
+                      placeholder="Optional"
+                    />
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        className="w-full rounded-full border border-black/10 py-2 text-[12px] font-semibold text-black/70 hover:bg-black/5"
+                        onClick={() => {
+                          if (typeof window !== "undefined") {
+                            window.localStorage.removeItem(LS_PREFS_KEY);
+                          }
+                          setDialect("Standard");
+                          setTone("");
+                          setPlurality("");
+                          setGender("unspecified");
+                          toast.success("Preferences reset");
+                        }}
+                      >
+                        Reset preferences
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -404,7 +675,6 @@ export default function TranslatorPage() {
               onKeyDown={submitOnEnter}
               onChange={(e) => {
                 const next = e.target.value;
-                // Enforce max length at input time
                 if (next.length > MAX_CHARS) {
                   toast.error("Input exceeds maximum length");
                   return;
@@ -426,9 +696,7 @@ export default function TranslatorPage() {
                 <div className="flex items-center gap-3 text-black/70">
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
-                    aria-label={
-                      speaking === "input" ? "Stop speech" : "Speaker"
-                    }
+                    aria-label={speaking === "input" ? "Stop speech" : "Speaker"}
                     type="button"
                     onClick={() => speakText(text, from, "input")}
                     disabled={!text}
@@ -491,9 +759,7 @@ export default function TranslatorPage() {
                 <div className="flex items-center gap-3 text-black/70">
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
-                    aria-label={
-                      speaking === "output" ? "Stop speech" : "Speaker"
-                    }
+                    aria-label={speaking === "output" ? "Stop speech" : "Speaker"}
                     type="button"
                     onClick={() => speakText(result ?? "", to, "output")}
                     disabled={!result}
@@ -589,10 +855,7 @@ export default function TranslatorPage() {
                 </h2>
                 <ul className="text-sm text-gray-600 font-medium space-y-3">
                   <li>
-                    <a
-                      href="/tos"
-                      className="hover:text-gray-900 hover:underline"
-                    >
+                    <a href="/tos" className="hover:text-gray-900 hover:underline">
                       Terms of Service
                     </a>
                   </li>
@@ -604,7 +867,7 @@ export default function TranslatorPage() {
                       Privacy Policy
                     </a>
                   </li>
-                   <li>
+                  <li>
                     <a
                       href="/cookies"
                       className="hover:text-gray-900 hover:underline"
