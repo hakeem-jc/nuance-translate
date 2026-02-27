@@ -9,6 +9,7 @@ import {
   Square,
   History,
   Trash2,
+  CircleX,
 } from "lucide-react";
 import Select from "@/components/Select";
 import { ToastContainer, toast } from "react-toastify";
@@ -362,6 +363,14 @@ export default function TranslatorPage() {
       toast.error("Could not start dictation");
       setListening(null);
     }
+  }
+
+  function clearInput() {
+    cancelSpeech();
+    stopDictation();
+    setText("");
+    setResult(null);
+    setError(null);
   }
 
   function swapLanguages(e?: React.MouseEvent) {
@@ -739,53 +748,11 @@ export default function TranslatorPage() {
           handleTranslate();
         }}
       >
-        {/* Language Row */}
-        <div className="mt-6 flex items-end gap-3">
-          <div className="flex-1 min-w-35 sm:min-w-45">
-            <Select
-              id="from"
-              label="From"
-              value={from}
-              onChange={(v) => {
-                cancelSpeech();
-                stopDictation();
-                setFrom(v);
-              }}
-              options={languageOptions}
-              placeholder="From"
-            />
-          </div>
-
-          <button
-            className="h-10 w-10 shrink-0 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center mb-1.5"
-            aria-label="Swap"
-            onClick={swapLanguages}
-            type="button"
-          >
-            <ArrowLeftRight className="h-5 w-5" />
-          </button>
-
-          <div className="flex-1 min-w-35 sm:min-w-45">
-            <Select
-              id="to"
-              label="To"
-              value={to}
-              onChange={(v) => {
-                cancelSpeech();
-                setTo(v);
-              }}
-              options={languageOptions}
-              placeholder="To"
-            />
-          </div>
-        </div>
-
-        {/* Translation Fields */}
-        <section className="mt-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section className="order-1 sm:order-2 mt-1 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Input */}
           <div className="rounded-sm border border-black/10 bg-white">
             <textarea
-              className="w-full mt-6 rounded-sm bg-white p-5 focus:outline-none resize-none"
+              className="w-full mt-4 rounded-sm bg-white p-5 focus:outline-none resize-none"
               placeholder="Enter text to translate"
               value={text}
               onKeyDown={submitOnEnter}
@@ -799,8 +766,8 @@ export default function TranslatorPage() {
               }}
             />
 
-            <div className="p-5">
-              <div className="mt-6 h-px w-full bg-black/10" />
+            <div className="p-4 pt-0 sm:p-5">
+              <div className="mt-4 sm:mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
                   {formatWithDots(inputCount)}{" "}
@@ -809,7 +776,19 @@ export default function TranslatorPage() {
                   </span>
                 </span>
 
-                <div className="flex items-center gap-3 text-black/70">
+                <div className="flex items-center gap-2 sm:gap-3 text-black/70">
+
+                  {result && <button
+                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
+                    aria-label="Clear input"
+                    type="button"
+                    onClick={clearInput}
+                    disabled={!text && !result && !error}
+                    title="Clear"
+                  >
+                    <CircleX className="h-5 w-5" />
+                  </button>}
+
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label={
@@ -870,7 +849,7 @@ export default function TranslatorPage() {
           >
             <div className="relative">
               <textarea
-                className="w-full mt-6 rounded-sm bg-white p-5 resize-none"
+                className="w-full mt-4 rounded-sm bg-white p-5 resize-none"
                 value={result ?? ""}
                 disabled
               />
@@ -887,8 +866,8 @@ export default function TranslatorPage() {
               )}
             </div>
 
-            <div className="p-5">
-              <div className="mt-6 h-px w-full bg-black/10" />
+            <div className="p-4 pt-0 sm:p-5">
+              <div className="mt-4 sm:mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
                   {formatWithDots(outputCount)}{" "}
@@ -897,7 +876,7 @@ export default function TranslatorPage() {
                   </span>
                 </span>
 
-                <div className="flex items-center gap-3 text-black/70">
+                <div className="flex items-center gap-2 sm:gap-3 text-black/70">
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label={
@@ -941,7 +920,48 @@ export default function TranslatorPage() {
           </div>
         </section>
 
-        <div className="text-center">
+        {/* Language Row (moves above Translate on mobile) */}
+        <div className="order-2 sm:order-1 mt-2 sm:mt-6 flex items-end gap-3">
+          <div className="flex-1 min-w-35 sm:min-w-45">
+            <Select
+              id="from"
+              label="From"
+              value={from}
+              onChange={(v) => {
+                cancelSpeech();
+                stopDictation();
+                setFrom(v);
+              }}
+              options={languageOptions}
+              placeholder="From"
+            />
+          </div>
+
+          <button
+            className="h-10 w-10 shrink-0 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center mb-1.5"
+            aria-label="Swap"
+            onClick={swapLanguages}
+            type="button"
+          >
+            <ArrowLeftRight className="h-5 w-5" />
+          </button>
+
+          <div className="flex-1 min-w-35 sm:min-w-45">
+            <Select
+              id="to"
+              label="To"
+              value={to}
+              onChange={(v) => {
+                cancelSpeech();
+                setTo(v);
+              }}
+              options={languageOptions}
+              placeholder="To"
+            />
+          </div>
+        </div>
+
+        <div className="order-3 text-center pt-1">
           <button
             disabled={!text || loading}
             className="w-64 cursor-pointer text-center rounded-3xl bg-(--foreground) text-white py-3 font-medium hover:bg-(--accent) disabled:opacity-50"
