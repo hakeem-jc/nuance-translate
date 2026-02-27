@@ -1,36 +1,196 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nuance Translate
 
-## Getting Started
+AI-powered translation application that captures linguistic nuance by allowing users to control **dialect, tone (formal/informal), plurality (singular/plural), and optional gender context** — going beyond literal translation.
 
-First, run the development server:
+---
+
+## Overview
+
+Nuance Translate is a full-stack Next.js application that integrates with the OpenAI API to generate context-aware translations. Unlike traditional translators, it enables users to fine-tune how translations are rendered by specifying:
+
+* Target dialect (e.g., Castilian Spanish vs. Mexican Spanish)
+* Tone (formal vs. informal)
+* Plurality preferences
+* Optional gender context
+
+The goal is to simulate real-world linguistic decision-making rather than one-to-one word substitution.
+
+---
+
+## Technical Stack
+
+**Frontend**
+
+* Next.js (App Router)
+* TypeScript
+* React
+* Tailwind CSS
+* Lucide Icons
+* React Toastify
+
+**Backend**
+
+* Next.js Route Handlers (App Router API)
+* OpenAI API integration
+* Structured prompt construction
+
+**Deployment**
+
+* Vercel
+
+---
+
+## Key Technical Highlights
+
+### 1. Structured Prompt Engineering
+
+Instead of sending raw user input directly to the LLM, the API layer builds a deterministic instruction set:
+
+* Explicit source/target language definition
+* Conditional inclusion of dialect
+* Conditional tone injection
+* Optional plurality and gender logic
+* Guardrails for output formatting
+
+This reduces ambiguity and improves response consistency.
+
+---
+
+### 2. Dynamic UI/UX Behavior
+
+* Character count tracking (max 5,000 chars)
+* Speech-to-text input
+* Text-to-speech output with cancellation support
+* Mobile-first responsive design
+* Conditional rendering for mobile vs desktop
+* LocalStorage persistence for user preferences
+
+---
+
+### 3. API Design
+
+**POST /api/translate**
+
+Request structure:
+
+```ts
+type TranslateRequest = {
+  text: string
+  from: string
+  to: string
+  options?: {
+    dialect?: string
+    tone?: "formal" | "informal"
+    plurality?: "singular" | "plural"
+    gender?: string
+  }
+}
+```
+
+The API constructs a controlled instruction prompt before forwarding to OpenAI.
+
+---
+
+## Local Development Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/nuance-translate.git
+cd nuance-translate
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+or
+
+```bash
+yarn install
+```
+
+---
+
+### 3. Create an OpenAI API Key
+
+1. Go to: [https://platform.openai.com/](https://platform.openai.com/)
+2. Sign in or create an account.
+3. Navigate to **API Keys**.
+4. Generate a new secret key.
+5. Copy the key (it will not be shown again).
+
+---
+
+### 4. Configure Environment Variables
+
+Create a `.env.local` file in the root of the project:
+
+```bash
+touch .env.local
+```
+
+Add the following:
+
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+Important:
+
+* Do **not** commit `.env.local`.
+* Ensure `.env.local` is listed in `.gitignore`.
+
+---
+
+### 5. Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app will be available at:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+| Variable       | Description           | Required |
+| -------------- | --------------------- | -------- |
+| OPENAI_API_KEY | OpenAI API secret key | Yes      |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Engineering Considerations
 
-## Deploy on Vercel
+* Deterministic prompt structure to reduce hallucination
+* Clean separation between UI state and translation logic
+* Defensive handling for speech recognition edge cases
+* SSR-compatible metadata configuration
+* Scalable architecture for adding history, authentication, or usage tracking
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Future Improvements
+
+* Persistent translation history (database-backed)
+* User accounts and saved preferences
+* Rate limiting + usage tracking
+* Streaming responses
+* Multi-model comparison
+* Evaluation harness for translation quality benchmarking
+
+
+---
+
+## Author
+
+Hakeem Clarke
+Senior Software Engineer
+Kingston, Jamaica
