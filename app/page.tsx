@@ -97,7 +97,14 @@ export default function TranslatorPage() {
   const historyWrapRef = useRef<HTMLDivElement | null>(null);
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
+
   const [speaking, setSpeaking] = useState<"input" | "output" | null>(null);
+
+  // Speech-to-text state
+  const [listening, setListening] = useState<"input" | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const dictationBaseRef = useRef<string>("");
+
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const languageOptions = useMemo(
@@ -146,7 +153,8 @@ export default function TranslatorPage() {
     if (savedPrefs) {
       if (savedPrefs.dialect) setDialect(savedPrefs.dialect);
       if (savedPrefs.tone !== undefined) setTone(savedPrefs.tone);
-      if (savedPrefs.plurality !== undefined) setPlurality(savedPrefs.plurality);
+      if (savedPrefs.plurality !== undefined)
+        setPlurality(savedPrefs.plurality);
       if (savedPrefs.gender) setGender(savedPrefs.gender);
     }
 
@@ -170,7 +178,7 @@ export default function TranslatorPage() {
     window.localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history));
   }, [history]);
 
-  // Keep dialect valid for selected "to" language (and do not overwrite saved prefs unless needed)
+  // Keep dialect valid for selected "to" language
   useEffect(() => {
     const allowed = getDialectOptions(to);
     if (!allowed.includes(dialect)) setDialect("Standard");
@@ -191,6 +199,7 @@ export default function TranslatorPage() {
     }
   }
 
+  // ---- Text-to-speech ----
   function cancelSpeech() {
     if (typeof window === "undefined") return;
     const synth = window.speechSynthesis;
@@ -213,13 +222,11 @@ export default function TranslatorPage() {
       return;
     }
 
-    // If the same side is already speaking, treat click as "stop"
     if (speaking === which) {
       cancelSpeech();
       return;
     }
 
-    // Cancel any previous speech and start fresh
     synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(value);
@@ -250,13 +257,116 @@ export default function TranslatorPage() {
     synth.speak(utterance);
   }
 
-  function startDictationPlaceholder() {
-    console.log("Mic placeholder: start dictation");
+  // ---- Speech-to-text (Web Speech API) ----
+  function getRecognitionLang(langLabel: string) {
+    const langMap: Record<string, string> = {
+      English: "en-US",
+      Spanish: "es-ES",
+      French: "fr-FR",
+      German: "de-DE",
+      Russian: "ru-RU",
+      Chinese: "zh-CN",
+      Portuguese: "pt-PT",
+      Japanese: "ja-JP",
+    };
+    return langMap[langLabel] ?? "en-US";
+  }
+
+  function stopDictation() {
+    const rec = recognitionRef.current;
+    if (rec) {
+      try {
+        rec.onresult = null;
+        rec.onend = null;
+        rec.onerror = null;
+        rec.stop();
+      } catch {
+        // ignore
+      }
+    }
+    recognitionRef.current = null;
+    setListening(null);
+  }
+
+  function toggleDictationInput() {
+    if (typeof window === "undefined") return;
+
+    if (listening === "input") {
+      stopDictation();
+      return;
+    }
+
+    // avoid clashes
+    cancelSpeech();
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      toast.error("Speech-to-text not supported in this browser");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+
+    recognition.lang = getRecognitionLang(from);
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    // Capture current textarea once at start (prevents duplicate appends)
+    dictationBaseRef.current = text;
+
+    recognition.onresult = (event: any) => {
+      // Build the transcript from ALL results so far (final + interim)
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+
+      const base = dictationBaseRef.current?.trim() ?? "";
+      const combined = `${base}${base ? " " : ""}${transcript.trim()}`.trim();
+
+      if (combined.length > MAX_CHARS) {
+        toast.error("Input exceeds maximum length");
+        stopDictation();
+        return;
+      }
+
+      setText(combined);
+    };
+
+    recognition.onerror = (e: any) => {
+      setListening(null);
+
+      const err = (e?.error || "").toLowerCase();
+      if (err === "no-speech") return;
+      if (err === "not-allowed" || err === "service-not-allowed") {
+        toast.error("Microphone permission denied");
+        return;
+      }
+      toast.error("Dictation failed");
+    };
+
+    recognition.onend = () => {
+      setListening(null);
+      recognitionRef.current = null;
+    };
+
+    try {
+      recognition.start();
+      setListening("input");
+    } catch {
+      toast.error("Could not start dictation");
+      setListening(null);
+    }
   }
 
   function swapLanguages(e?: React.MouseEvent) {
     e?.preventDefault();
     cancelSpeech();
+    stopDictation();
 
     setFrom((prevFrom) => {
       setTo(prevFrom);
@@ -287,7 +397,6 @@ export default function TranslatorPage() {
             : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       };
 
-      // de-dupe by (from,to,text,translation) to reduce spam
       const filtered = prev.filter(
         (h) =>
           !(
@@ -379,6 +488,7 @@ export default function TranslatorPage() {
       if (e.key !== "Escape") return;
       if (settingsOpen) setSettingsOpen(false);
       if (historyOpen) setHistoryOpen(false);
+      if (listening) stopDictation();
     }
 
     window.addEventListener("pointerdown", onPointerDown);
@@ -387,11 +497,14 @@ export default function TranslatorPage() {
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [settingsOpen, historyOpen]);
+  }, [settingsOpen, historyOpen, listening]);
 
-  // Cleanup: stop speech on unmount
+  // Cleanup: stop speech + dictation on unmount
   useEffect(() => {
-    return () => cancelSpeech();
+    return () => {
+      cancelSpeech();
+      stopDictation();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -492,13 +605,14 @@ export default function TranslatorPage() {
                               className="rounded-full px-3 py-1.5 text-[12px] font-semibold text-black/70 hover:bg-black/5"
                               onClick={() => {
                                 cancelSpeech();
+                                stopDictation();
                                 setFrom(h.from);
                                 setTo(h.to);
                                 setText(h.text);
                                 setResult(h.translation);
 
-                                // Restore saved options
-                                if (h.options.dialect) setDialect(h.options.dialect);
+                                if (h.options.dialect)
+                                  setDialect(h.options.dialect);
                                 if (h.options.tone)
                                   setTone(h.options.tone as any);
                                 if (h.options.plurality)
@@ -633,6 +747,7 @@ export default function TranslatorPage() {
               value={from}
               onChange={(v) => {
                 cancelSpeech();
+                stopDictation();
                 setFrom(v);
               }}
               options={languageOptions}
@@ -696,7 +811,9 @@ export default function TranslatorPage() {
                 <div className="flex items-center gap-3 text-black/70">
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
-                    aria-label={speaking === "input" ? "Stop speech" : "Speaker"}
+                    aria-label={
+                      speaking === "input" ? "Stop speech" : "Speaker"
+                    }
                     type="button"
                     onClick={() => speakText(text, from, "input")}
                     disabled={!text}
@@ -719,13 +836,23 @@ export default function TranslatorPage() {
                     <Copy className="h-5 w-5" />
                   </button>
 
+                  {/* Speech-to-text for input */}
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
-                    aria-label="Mic"
+                    aria-label={
+                      listening === "input"
+                        ? "Stop dictation"
+                        : "Start dictation"
+                    }
                     type="button"
-                    onClick={startDictationPlaceholder}
+                    onClick={toggleDictationInput}
+                    title={listening === "input" ? "Stop dictation" : "Dictate"}
                   >
-                    <Mic className="h-5 w-5" />
+                    {listening === "input" ? (
+                      <Square className="h-5 w-5" />
+                    ) : (
+                      <Mic className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -759,7 +886,9 @@ export default function TranslatorPage() {
                 <div className="flex items-center gap-3 text-black/70">
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
-                    aria-label={speaking === "output" ? "Stop speech" : "Speaker"}
+                    aria-label={
+                      speaking === "output" ? "Stop speech" : "Speaker"
+                    }
                     type="button"
                     onClick={() => speakText(result ?? "", to, "output")}
                     disabled={!result}
@@ -782,11 +911,14 @@ export default function TranslatorPage() {
                     <Copy className="h-5 w-5" />
                   </button>
 
+                  {/* Keep output mic as-is (no dictation for output textarea) */}
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Mic"
                     type="button"
-                    onClick={startDictationPlaceholder}
+                    onClick={() =>
+                      toast.info("Dictation is available on the input box")
+                    }
                   >
                     <Mic className="h-5 w-5" />
                   </button>
@@ -833,6 +965,8 @@ export default function TranslatorPage() {
                   <li>
                     <a
                       href="https://github.com/hakeem-jc"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="hover:text-gray-900 hover:underline"
                     >
                       GitHub
@@ -841,6 +975,8 @@ export default function TranslatorPage() {
                   <li>
                     <a
                       href="https://www.linkedin.com/in/hakeemclarke/"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="hover:text-gray-900 hover:underline"
                     >
                       LinkedIn
@@ -855,7 +991,10 @@ export default function TranslatorPage() {
                 </h2>
                 <ul className="text-sm text-gray-600 font-medium space-y-3">
                   <li>
-                    <a href="/tos" className="hover:text-gray-900 hover:underline">
+                    <a
+                      href="/tos"
+                      className="hover:text-gray-900 hover:underline"
+                    >
                       Terms of Service
                     </a>
                   </li>
@@ -885,6 +1024,8 @@ export default function TranslatorPage() {
               © {new Date().getFullYear()}{" "}
               <a
                 href="https://www.hakeemclarke.com/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="font-medium text-gray-900 hover:underline"
               >
                 Hakeem Clarke
@@ -895,6 +1036,8 @@ export default function TranslatorPage() {
             <div className="mt-4 flex items-center justify-center gap-5 sm:justify-end sm:mt-0">
               <a
                 href="https://www.linkedin.com/in/hakeemclarke/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-gray-500 hover:text-gray-900 transition-colors"
                 aria-label="LinkedIn"
               >
@@ -911,6 +1054,8 @@ export default function TranslatorPage() {
 
               <a
                 href="https://github.com/hakeem-jc"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-gray-500 hover:text-gray-900 transition-colors"
                 aria-label="GitHub"
               >
@@ -931,6 +1076,8 @@ export default function TranslatorPage() {
 
               <a
                 href="https://dribbble.com/HakeemC"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-gray-500 hover:text-gray-900 transition-colors"
                 aria-label="Dribbble"
               >
