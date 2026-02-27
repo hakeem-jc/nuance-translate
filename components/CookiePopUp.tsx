@@ -44,8 +44,7 @@ export default function CookiePopup() {
           </h2>
 
           <p className="mt-2 text-[14px] leading-relaxed text-zinc-600">
-            We use cookies for essential functions and to better understand how you use Nuance Translate, so we can
-            create the best experience for you{" "}
+            I use cookies for essential website functions and to better understand how you use the app, so I can create the best possible experience for you{" "}
           </p>
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
