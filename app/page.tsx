@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Select from "@/components/Select";
 import { ToastContainer, toast } from "react-toastify";
+import Image from "next/image";
 
 const DIALECTS_BY_LANGUAGE: Record<string, string[]> = {
   English: ["US", "UK", "Caribbean"],
@@ -867,11 +868,24 @@ export default function TranslatorPage() {
               "md:block",
             ].join(" ")}
           >
-            <textarea
-              className="w-full mt-6 rounded-sm bg-white p-5 resize-none"
-              value={result ?? ""}
-              disabled
-            />
+            <div className="relative">
+              <textarea
+                className="w-full mt-6 rounded-sm bg-white p-5 resize-none"
+                value={result ?? ""}
+                disabled
+              />
+
+              {loading && !result && (
+                <div className="pointer-events-none absolute left-5 top-8">
+                  <Image
+                    src="/3-dots-bounce.svg"
+                    height={50}
+                    width={50}
+                    alt="Loading"
+                  />
+                </div>
+              )}
+            </div>
 
             <div className="p-5">
               <div className="mt-6 h-px w-full bg-black/10" />
@@ -911,7 +925,6 @@ export default function TranslatorPage() {
                     <Copy className="h-5 w-5" />
                   </button>
 
-                  {/* Keep output mic as-is (no dictation for output textarea) */}
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label="Mic"
