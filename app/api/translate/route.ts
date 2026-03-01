@@ -30,7 +30,7 @@ function buildTranslationPrompt({ text, from, to, options }: TranslateRequest) {
   }
 
   instructions.push(
-    "Preserve meaning and cultural nuance. Do not explain the translation. Don't include quotation marks in your response. Just the text."
+    "Preserve meaning and cultural nuance. Do not explain the translation. Don't include quotation marks in your response. Just the text. When tone isn't specified, try to infer it based on the text."
   );
 
   return `

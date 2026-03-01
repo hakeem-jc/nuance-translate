@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 type SelectOption = {
   value: string;
@@ -16,6 +16,27 @@ type SelectProps = {
   required?: boolean;
 };
 
+const LANGUAGE_TO_COUNTRY_CODE: Record<
+  | "English"
+  | "Spanish"
+  | "French"
+  | "Russian"
+  | "German"
+  | "Japanese"
+  | "Chinese"
+  | "Portuguese",
+  string
+> = {
+  English: "GB",
+  Spanish: "ES",
+  French: "FR",
+  Russian: "RU",
+  German: "DE",
+  Japanese: "JP",
+  Chinese: "CN",
+  Portuguese: "PT",
+};
+
 const Select: React.FC<SelectProps> = ({
   id,
   label,
@@ -26,6 +47,11 @@ const Select: React.FC<SelectProps> = ({
   error,
   required = false,
 }) => {
+  const countryCode = useMemo(() => {
+    const code = LANGUAGE_TO_COUNTRY_CODE[value as keyof typeof LANGUAGE_TO_COUNTRY_CODE];
+    return code ?? "";
+  }, [value]);
+
   return (
     <div>
       <label
@@ -37,12 +63,20 @@ const Select: React.FC<SelectProps> = ({
       </label>
 
       <div className="relative">
+        {countryCode && (
+          <img
+            src={`https://flagsapi.com/${countryCode}/flat/64.png`}
+            alt={`${value} flag`}
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-sm pointer-events-none"
+          />
+        )}
+
         <select
           id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={`
-            w-full h-12 px-5 text-base
+            w-full h-12 text-sm bg-gray-50
             border border-black/10 rounded-none
             text-color
             font-normal antialiased
@@ -50,6 +84,7 @@ const Select: React.FC<SelectProps> = ({
             appearance-none
             cursor-pointer
             pr-12
+            ${countryCode ? "pl-10 sm:pl-12" : "pl-5"}
             ${error ? "border-red-500" : "border-[#bab8c6]"}
           `}
         >

@@ -9,6 +9,7 @@ import {
   Square,
   History,
   Trash2,
+  CircleX,
 } from "lucide-react";
 import Select from "@/components/Select";
 import { ToastContainer, toast } from "react-toastify";
@@ -364,6 +365,14 @@ export default function TranslatorPage() {
     }
   }
 
+  function clearInput() {
+    cancelSpeech();
+    stopDictation();
+    setText("");
+    setResult(null);
+    setError(null);
+  }
+
   function swapLanguages(e?: React.MouseEvent) {
     e?.preventDefault();
     cancelSpeech();
@@ -419,9 +428,11 @@ export default function TranslatorPage() {
     }
   }
 
-  async function handleTranslate() {
-    if (!text) return;
-    if (text.length > MAX_CHARS) {
+  async function handleTranslate(overrideText?: string) {
+    const textToTranslate = (overrideText ?? text).trim();
+    if (!textToTranslate) return;
+
+    if (textToTranslate.length > MAX_CHARS) {
       toast.error(`Max ${formatWithDots(MAX_CHARS)} characters`);
       return;
     }
@@ -442,7 +453,7 @@ export default function TranslatorPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text,
+          text: textToTranslate,
           from,
           to,
           options,
@@ -458,7 +469,7 @@ export default function TranslatorPage() {
         createdAt: Date.now(),
         from,
         to,
-        text,
+        text: textToTranslate,
         translation: data.translation,
         options,
       });
@@ -499,6 +510,45 @@ export default function TranslatorPage() {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [settingsOpen, historyOpen, listening]);
+
+  function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const next = e.target.value;
+    if (next.length > MAX_CHARS) {
+      toast.error("Input exceeds maximum length");
+      return;
+    }
+    setText(next);
+  }
+
+  function handleInputPaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const pasted = e.clipboardData?.getData("text") ?? "";
+    if (!pasted) return;
+
+    e.preventDefault();
+
+    const el = e.currentTarget;
+    const start = el.selectionStart ?? text.length;
+    const end = el.selectionEnd ?? text.length;
+
+    const next = (text.slice(0, start) + pasted + text.slice(end)).slice(
+      0,
+      MAX_CHARS,
+    );
+
+    if (next.length > MAX_CHARS) {
+      toast.error("Input exceeds maximum length");
+      return;
+    }
+
+    cancelSpeech();
+    stopDictation();
+
+    setText(next);
+    setResult(null);
+    setError(null);
+
+    handleTranslate(next);
+  }
 
   // Cleanup: stop speech + dictation on unmount
   useEffect(() => {
@@ -708,7 +758,7 @@ export default function TranslatorPage() {
                     <div className="pt-2">
                       <button
                         type="button"
-                        className="w-full rounded-full border border-black/10 py-2 text-[12px] font-semibold text-black/70 hover:bg-black/5"
+                        className="w-full cursor-pointer text-center rounded-3xl bg-(--foreground) text-white py-2 font-medium hover:bg-(--accent)"
                         onClick={() => {
                           if (typeof window !== "undefined") {
                             window.localStorage.removeItem(LS_PREFS_KEY);
@@ -739,68 +789,20 @@ export default function TranslatorPage() {
           handleTranslate();
         }}
       >
-        {/* Language Row */}
-        <div className="mt-6 flex items-end gap-3">
-          <div className="flex-1 min-w-35 sm:min-w-45">
-            <Select
-              id="from"
-              label="From"
-              value={from}
-              onChange={(v) => {
-                cancelSpeech();
-                stopDictation();
-                setFrom(v);
-              }}
-              options={languageOptions}
-              placeholder="From"
-            />
-          </div>
-
-          <button
-            className="h-10 w-10 shrink-0 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center mb-1.5"
-            aria-label="Swap"
-            onClick={swapLanguages}
-            type="button"
-          >
-            <ArrowLeftRight className="h-5 w-5" />
-          </button>
-
-          <div className="flex-1 min-w-35 sm:min-w-45">
-            <Select
-              id="to"
-              label="To"
-              value={to}
-              onChange={(v) => {
-                cancelSpeech();
-                setTo(v);
-              }}
-              options={languageOptions}
-              placeholder="To"
-            />
-          </div>
-        </div>
-
-        {/* Translation Fields */}
-        <section className="mt-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section className="order-1 sm:order-2 mt-1 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Input */}
           <div className="rounded-sm border border-black/10 bg-white">
             <textarea
-              className="w-full mt-6 rounded-sm bg-white p-5 focus:outline-none resize-none"
+              className="w-full mt-4 rounded-sm bg-white p-5 focus:outline-none resize-none"
               placeholder="Enter text to translate"
               value={text}
               onKeyDown={submitOnEnter}
-              onChange={(e) => {
-                const next = e.target.value;
-                if (next.length > MAX_CHARS) {
-                  toast.error("Input exceeds maximum length");
-                  return;
-                }
-                setText(next);
-              }}
+              onPaste={handleInputPaste}
+              onChange={handleInputChange}
             />
 
-            <div className="p-5">
-              <div className="mt-6 h-px w-full bg-black/10" />
+            <div className="p-4 pt-0 sm:p-5">
+              <div className="mt-4 sm:mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
                   {formatWithDots(inputCount)}{" "}
@@ -809,7 +811,20 @@ export default function TranslatorPage() {
                   </span>
                 </span>
 
-                <div className="flex items-center gap-3 text-black/70">
+                <div className="flex items-center gap-2 sm:gap-3 text-black/70">
+                  {result && (
+                    <button
+                      className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
+                      aria-label="Clear input"
+                      type="button"
+                      onClick={clearInput}
+                      disabled={!text && !result && !error}
+                      title="Clear"
+                    >
+                      <CircleX className="h-5 w-5" />
+                    </button>
+                  )}
+
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label={
@@ -870,7 +885,7 @@ export default function TranslatorPage() {
           >
             <div className="relative">
               <textarea
-                className="w-full mt-6 rounded-sm bg-white p-5 resize-none"
+                className="w-full mt-4 rounded-sm bg-white p-5 resize-none"
                 value={result ?? ""}
                 disabled
               />
@@ -887,8 +902,8 @@ export default function TranslatorPage() {
               )}
             </div>
 
-            <div className="p-5">
-              <div className="mt-6 h-px w-full bg-black/10" />
+            <div className="p-4 pt-0 sm:p-5">
+              <div className="mt-4 sm:mt-6 h-px w-full bg-black/10" />
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-black/85">
                   {formatWithDots(outputCount)}{" "}
@@ -897,7 +912,7 @@ export default function TranslatorPage() {
                   </span>
                 </span>
 
-                <div className="flex items-center gap-3 text-black/70">
+                <div className="flex items-center gap-2 sm:gap-3 text-black/70">
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
                     aria-label={
@@ -941,7 +956,48 @@ export default function TranslatorPage() {
           </div>
         </section>
 
-        <div className="text-center">
+        {/* Language Row (moves above Translate on mobile) */}
+        <div className="order-2 sm:order-1 mt-2 sm:mt-6 flex items-end gap-3">
+          <div className="flex-1 min-w-35 sm:min-w-45">
+            <Select
+              id="from"
+              label="From"
+              value={from}
+              onChange={(v) => {
+                cancelSpeech();
+                stopDictation();
+                setFrom(v);
+              }}
+              options={languageOptions}
+              placeholder="From"
+            />
+          </div>
+
+          <button
+            className="h-10 w-10 shrink-0 rounded-full bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] flex items-center justify-center mb-1.5"
+            aria-label="Swap"
+            onClick={swapLanguages}
+            type="button"
+          >
+            <ArrowLeftRight className="h-5 w-5" />
+          </button>
+
+          <div className="flex-1 min-w-35 sm:min-w-45">
+            <Select
+              id="to"
+              label="To"
+              value={to}
+              onChange={(v) => {
+                cancelSpeech();
+                setTo(v);
+              }}
+              options={languageOptions}
+              placeholder="To"
+            />
+          </div>
+        </div>
+
+        <div className="order-3 text-center pt-0.5">
           <button
             disabled={!text || loading}
             className="w-64 cursor-pointer text-center rounded-3xl bg-(--foreground) text-white py-3 font-medium hover:bg-(--accent) disabled:opacity-50"
@@ -955,7 +1011,7 @@ export default function TranslatorPage() {
       </form>
 
       <footer className="mt-10 border-t border-black/10 bg-gray-50">
-        <div className="mx-auto w-full max-w-7xl px-4 py-10">
+        <div className="mx-auto w-full max-w-7xl px-4 py-2 md:py-5">
           <div className="md:flex md:justify-between md:gap-10">
             <div className="mb-8 md:mb-0 md:flex md:items-start md:gap-6">
               <a href="./" className="flex justify-center md:justify-start">
