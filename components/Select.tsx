@@ -76,7 +76,7 @@ const Select: React.FC<SelectProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={`
-            w-full h-12 text-base bg-gray-50
+            w-full h-12 text-sm bg-gray-50
             border border-black/10 rounded-none
             text-color
             font-normal antialiased
@@ -84,7 +84,7 @@ const Select: React.FC<SelectProps> = ({
             appearance-none
             cursor-pointer
             pr-12
-            ${countryCode ? "pl-12" : "pl-5"}
+            ${countryCode ? "pl-10 sm:pl-12" : "pl-5"}
             ${error ? "border-red-500" : "border-[#bab8c6]"}
           `}
         >
