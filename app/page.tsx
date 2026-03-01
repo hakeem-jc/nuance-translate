@@ -428,9 +428,11 @@ export default function TranslatorPage() {
     }
   }
 
-  async function handleTranslate() {
-    if (!text) return;
-    if (text.length > MAX_CHARS) {
+  async function handleTranslate(overrideText?: string) {
+    const textToTranslate = (overrideText ?? text).trim();
+    if (!textToTranslate) return;
+
+    if (textToTranslate.length > MAX_CHARS) {
       toast.error(`Max ${formatWithDots(MAX_CHARS)} characters`);
       return;
     }
@@ -451,7 +453,7 @@ export default function TranslatorPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text,
+          text: textToTranslate,
           from,
           to,
           options,
@@ -467,7 +469,7 @@ export default function TranslatorPage() {
         createdAt: Date.now(),
         from,
         to,
-        text,
+        text: textToTranslate,
         translation: data.translation,
         options,
       });
@@ -508,6 +510,45 @@ export default function TranslatorPage() {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [settingsOpen, historyOpen, listening]);
+
+  function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const next = e.target.value;
+    if (next.length > MAX_CHARS) {
+      toast.error("Input exceeds maximum length");
+      return;
+    }
+    setText(next);
+  }
+
+  function handleInputPaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const pasted = e.clipboardData?.getData("text") ?? "";
+    if (!pasted) return;
+
+    e.preventDefault();
+
+    const el = e.currentTarget;
+    const start = el.selectionStart ?? text.length;
+    const end = el.selectionEnd ?? text.length;
+
+    const next = (text.slice(0, start) + pasted + text.slice(end)).slice(
+      0,
+      MAX_CHARS,
+    );
+
+    if (next.length > MAX_CHARS) {
+      toast.error("Input exceeds maximum length");
+      return;
+    }
+
+    cancelSpeech();
+    stopDictation();
+
+    setText(next);
+    setResult(null);
+    setError(null);
+
+    handleTranslate(next);
+  }
 
   // Cleanup: stop speech + dictation on unmount
   useEffect(() => {
@@ -756,14 +797,8 @@ export default function TranslatorPage() {
               placeholder="Enter text to translate"
               value={text}
               onKeyDown={submitOnEnter}
-              onChange={(e) => {
-                const next = e.target.value;
-                if (next.length > MAX_CHARS) {
-                  toast.error("Input exceeds maximum length");
-                  return;
-                }
-                setText(next);
-              }}
+              onPaste={handleInputPaste}
+              onChange={handleInputChange}
             />
 
             <div className="p-4 pt-0 sm:p-5">
@@ -777,17 +812,18 @@ export default function TranslatorPage() {
                 </span>
 
                 <div className="flex items-center gap-2 sm:gap-3 text-black/70">
-
-                  {result && <button
-                    className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
-                    aria-label="Clear input"
-                    type="button"
-                    onClick={clearInput}
-                    disabled={!text && !result && !error}
-                    title="Clear"
-                  >
-                    <CircleX className="h-5 w-5" />
-                  </button>}
+                  {result && (
+                    <button
+                      className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
+                      aria-label="Clear input"
+                      type="button"
+                      onClick={clearInput}
+                      disabled={!text && !result && !error}
+                      title="Clear"
+                    >
+                      <CircleX className="h-5 w-5" />
+                    </button>
+                  )}
 
                   <button
                     className="h-9 w-9 rounded-full hover:bg-black/5 flex items-center justify-center cursor-pointer"
