@@ -1011,7 +1011,7 @@ export default function TranslatorPage() {
       </form>
 
       <footer className="mt-10 border-t border-black/10 bg-gray-50">
-        <div className="mx-auto w-full max-w-7xl px-4 py-2">
+        <div className="mx-auto w-full max-w-7xl px-4 py-2 md:py-5">
           <div className="md:flex md:justify-between md:gap-10">
             <div className="mb-8 md:mb-0 md:flex md:items-start md:gap-6">
               <a href="./" className="flex justify-center md:justify-start">
