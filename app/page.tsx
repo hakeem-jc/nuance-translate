@@ -961,7 +961,7 @@ export default function TranslatorPage() {
           </div>
         </div>
 
-        <div className="order-3 text-center pt-1">
+        <div className="order-3 text-center pt-0.5">
           <button
             disabled={!text || loading}
             className="w-64 cursor-pointer text-center rounded-3xl bg-(--foreground) text-white py-3 font-medium hover:bg-(--accent) disabled:opacity-50"
