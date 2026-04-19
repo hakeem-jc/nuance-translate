@@ -38,11 +38,14 @@ const LS_PREFS_KEY = "nuance_translate_prefs_v1";
 const LS_HISTORY_KEY = "nuance_translate_history_v1";
 const HISTORY_LIMIT = 30;
 
+type Domain = "general" | "legal" | "medical" | "financial" | "technical";
+
 type Prefs = {
   dialect?: string;
   tone?: "formal" | "informal" | "";
   plurality?: "singular" | "plural" | "";
   gender?: "unspecified" | "male" | "female" | "neutral";
+  domain?: Domain;
 };
 
 type HistoryItem = {
@@ -57,6 +60,7 @@ type HistoryItem = {
     tone?: string;
     plurality?: string;
     gender?: string;
+    domain?: string;
   };
 };
 
@@ -87,6 +91,7 @@ export default function TranslatorPage() {
   const [gender, setGender] = useState<
     "unspecified" | "male" | "female" | "neutral"
   >("unspecified");
+  const [domain, setDomain] = useState<Domain>("general");
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -145,6 +150,17 @@ export default function TranslatorPage() {
     [],
   );
 
+  const domainOptions = useMemo(
+    () => [
+      { value: "general", label: "General" },
+      { value: "legal", label: "Legal" },
+      { value: "medical", label: "Medical" },
+      { value: "financial", label: "Financial" },
+      { value: "technical", label: "Technical" },
+    ],
+    [],
+  );
+
   // Load prefs + history once on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -158,6 +174,7 @@ export default function TranslatorPage() {
       if (savedPrefs.plurality !== undefined)
         setPlurality(savedPrefs.plurality);
       if (savedPrefs.gender) setGender(savedPrefs.gender);
+      if (savedPrefs.domain) setDomain(savedPrefs.domain);
     }
 
     const savedHistory = safeJsonParse<HistoryItem[]>(
@@ -170,9 +187,9 @@ export default function TranslatorPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const prefs: Prefs = { dialect, tone, plurality, gender };
+    const prefs: Prefs = { dialect, tone, plurality, gender, domain };
     window.localStorage.setItem(LS_PREFS_KEY, JSON.stringify(prefs));
-  }, [dialect, tone, plurality, gender]);
+  }, [dialect, tone, plurality, gender, domain]);
 
   // Persist history whenever it changes
   useEffect(() => {
@@ -446,6 +463,7 @@ export default function TranslatorPage() {
       tone: tone || undefined,
       plurality: plurality || undefined,
       gender: gender || undefined,
+      domain: domain || undefined,
     };
 
     try {
@@ -630,6 +648,12 @@ export default function TranslatorPage() {
                             </p>
                           </div>
 
+                          {h.options.domain && h.options.domain !== "general" && (
+                            <p className="mt-1 text-[11px] text-black/45 capitalize">
+                              {h.options.domain}
+                            </p>
+                          )}
+
                           <div className="mt-2 grid grid-cols-1 gap-2">
                             <div>
                               <p className="text-[11px] font-semibold text-black/60">
@@ -670,6 +694,8 @@ export default function TranslatorPage() {
                                   setPlurality(h.options.plurality as any);
                                 if (h.options.gender)
                                   setGender(h.options.gender as any);
+                                if (h.options.domain)
+                                  setDomain(h.options.domain as Domain);
 
                                 setHistoryOpen(false);
                               }}
@@ -720,6 +746,15 @@ export default function TranslatorPage() {
                 >
                   <div className="space-y-3">
                     <Select
+                      id="domain"
+                      label="Domain"
+                      value={domain}
+                      onChange={(v) => setDomain(v as Domain)}
+                      options={domainOptions}
+                      placeholder="General"
+                    />
+
+                    <Select
                       id="dialect"
                       label="Dialect"
                       value={dialect}
@@ -763,6 +798,7 @@ export default function TranslatorPage() {
                           if (typeof window !== "undefined") {
                             window.localStorage.removeItem(LS_PREFS_KEY);
                           }
+                          setDomain("general");
                           setDialect("Standard");
                           setTone("");
                           setPlurality("");
