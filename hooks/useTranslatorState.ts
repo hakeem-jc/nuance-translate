@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { Domain, HistoryItem, Prefs } from "../types/translation";
+import { Domain, HistoryItem, Prefs, SynonymEntry } from "../types/translation";
 import {
   formatWithDots,
   getDialectOptions,
@@ -26,6 +26,7 @@ export function useTranslatorState() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [synonyms, setSynonyms] = useState<SynonymEntry[]>([]);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsWrapRef = useRef<HTMLDivElement | null>(null);
@@ -258,6 +259,7 @@ export function useTranslatorState() {
     setText("");
     setResult(null);
     setError(null);
+    setSynonyms([]);
   }
 
   function swapLanguages(e?: React.MouseEvent) {
@@ -315,6 +317,7 @@ export function useTranslatorState() {
     setText(next);
     setResult(null);
     setError(null);
+    setSynonyms([]);
     handleTranslate(next);
   }
 
@@ -358,6 +361,7 @@ export function useTranslatorState() {
     setTo(h.to);
     setText(h.text);
     setResult(h.translation);
+    setSynonyms([]);
     if (h.options.dialect) setDialect(h.options.dialect);
     if (h.options.tone) setTone(h.options.tone as any);
     if (h.options.plurality) setPlurality(h.options.plurality as any);
@@ -380,6 +384,7 @@ export function useTranslatorState() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setSynonyms([]);
 
     const options = {
       dialect: dialect || undefined,
@@ -400,6 +405,7 @@ export function useTranslatorState() {
 
       const data = await res.json();
       setResult(data.translation);
+      setSynonyms(Array.isArray(data.synonyms) ? data.synonyms : []);
       addToHistory({ createdAt: Date.now(), from, to, text: textToTranslate, translation: data.translation, options });
     } catch {
       setError("Something went wrong. Please try again.");
@@ -465,7 +471,7 @@ export function useTranslatorState() {
   return {
     // state
     text, from, to, dialect, tone, plurality, gender, domain,
-    loading, result, error,
+    loading, result, error, synonyms,
     settingsOpen, setSettingsOpen, settingsWrapRef,
     historyOpen, setHistoryOpen, historyWrapRef,
     history, speaking, listening,

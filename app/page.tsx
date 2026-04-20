@@ -6,6 +6,7 @@ import { SettingsPanel } from "@/components/SettingsPanel";
 import { InputBox } from "@/components/InputBox";
 import { OutputBox } from "@/components/OutputBox";
 import { LanguageRow } from "@/components/LanguageRow";
+import { SynonymsPanel } from "@/components/SynonymsPanel";
 import { TranslatorFooter } from "@/components/TranslatorFooter";
 
 export default function TranslatorPage() {
@@ -107,6 +108,11 @@ export default function TranslatorPage() {
           {s.error && <p className="text-sm text-red-400 mt-2">{s.error}</p>}
         </div>
       </form>
+
+      <SynonymsPanel
+        synonyms={s.synonyms}
+        onCopy={s.copyToClipboard}
+      />
 
       <TranslatorFooter />
 

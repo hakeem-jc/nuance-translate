@@ -39,3 +39,9 @@ export type HistoryItem = {
   translation: string;
   options: Options
 };
+
+export type SynonymEntry = {
+  word: string;
+  synonyms: string[];
+};
+ 
