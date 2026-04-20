@@ -157,7 +157,8 @@ export async function POST(req: NextRequest) {
         const cleaned = raw
           .trim()
           .replace(/^```(?:json)?|```$/gm, "")
-          .trim();
+          .trim()
+          .replace(/^[\"'“”«»]+|[\"'“”«»]+$/g, "");
         const parsed = JSON.parse(cleaned);
         if (Array.isArray(parsed) && parsed.length > 0) {
           synonyms = parsed;
