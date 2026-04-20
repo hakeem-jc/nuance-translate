@@ -76,7 +76,6 @@ export function useTranslatorState() {
   ], []);
 
   const domainOptions = useMemo(() => [
-    { value: "general", label: "General" },
     { value: "legal", label: "Legal" },
     { value: "medical", label: "Medical" },
     { value: "financial", label: "Financial" },
