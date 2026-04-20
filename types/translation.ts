@@ -1,23 +1,41 @@
-export type TranslationTone = "formal" | "informal";
+export type Tone = "formal" | "informal";
 
-export interface TranslationOptions {
+export interface Options {
   dialect?: string;
-  tone?: TranslationTone;
+  tone?: Tone;
   plurality?: "singular" | "plural";
   gender?: "unspecified" | "male" | "female" | "neutral";
-  domain?: TranslationDomain;
+  domain?: Domain;
 }
 
-export type TranslationDomain =
+export interface TranslateRequest {
+  text: string;
+  from: string;
+  to: string;
+  options?: Options;
+}
+
+export type Domain =
   | "general"
   | "legal"
   | "medical"
   | "financial"
   | "technical";
 
-export interface TranslateRequest {
-  text: string;
+export type Prefs = {
+  dialect?: string;
+  tone?: "formal" | "informal" | "";
+  plurality?: "singular" | "plural" | "";
+  gender?: "unspecified" | "male" | "female" | "neutral";
+  domain?: Domain;
+};
+
+export type HistoryItem = {
+  id: string;
+  createdAt: number;
   from: string;
   to: string;
-  options?: TranslationOptions;
-}
+  text: string;
+  translation: string;
+  options: Options
+};
